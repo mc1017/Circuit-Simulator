@@ -39,4 +39,15 @@ feat - used for feature
 hotfix - used for bug fixes off stable
 
 
+Random Git Commands:
+
+git fetch --prune (Delete merged branches in vscode, restart vscode after command)
+
+git status (List which files are staged, unstaged, and untracked.)
+
+git log (Shows commits history)
+
+Git commands cheatsheet:
+https://www.atlassian.com/git/tutorials/atlassian-git-cheatsheet
+
 

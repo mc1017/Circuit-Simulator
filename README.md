@@ -10,6 +10,7 @@ Github Naming Convention:
 
 Stable - stable	- Accepts merges from Working and Hotfixes
 Working - master - Accepts merges from Features/Issues and Hotfixes
+
 Features/Bug topic-* - Always branch off HEAD of Working
 Hotfix	hotfix-*	- Always branch off Stable
 
@@ -25,6 +26,7 @@ https://gist.github.com/digitaljhelms/4287848
 (There are a lot of naming conventions out there. This is the one we are using for this project)
 
 
+
 Commit Messages convention:
 
 <type>[optional scope]:<description>
@@ -35,5 +37,6 @@ info - used for info and comments
 fix - used for bug fixes
 feat - used for feature
 hotfix - used for bug fixes off stable
+
 
 

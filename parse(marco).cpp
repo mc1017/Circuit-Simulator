@@ -5,27 +5,86 @@
 #include <sstream>
 #include <vector>
 #include <math.h>
+#include <complex>
 
 
-struct Resistor{
+
+class ImpedanceDevice{
+public:
+ 
+  virtual std::complex<double> get_impedance(double omega) const = 0;
+
+  virtual ~ImpedanceDevice() { }
+};
+ 
+class Resistor : public ImpedanceDevice{
+public:
+
+  Resistor(int n1, int n2, double r) : node1(n1), node2(n2), resistance(r){
+
+  }
+
+  std::string show_nodeinfo() const {
+    return "Nodal Coordinates: (" + std::to_string(node1) + ", " + std::to_string(node2) + ")";
+  }
+
+  std::complex<double> get_impedance(double omega) const {
+    std::complex<double> impedance(resistance);
+    return impedance;
+  }
+private:
   int node1;
   int node2;
   double resistance;
 };
 
+class Capacitor : public ImpedanceDevice{
+public:
+  Capacitor(int n1, int n2, double c) : node1(n1), node2(n2), capacitance(c) { }
+
+  std::string show_nodeinfo() const {
+    return "Nodal Coordinates: (" + std::to_string(node1) + ", " + std::to_string(node2) + ")";
+  }
+  std::complex<double>get_impedance(double omega) const {
+
+    std::complex<double> impedance(0, - 1/(omega * capacitance));
+    return impedance;
+  }
+ 
+private :
+  int node1;
+  int node2;
+  double capacitance;
+ 
+};
+
+class Inductor: public ImpedanceDevice{
+public:
+  Inductor(int n1, int n2, double c, double in): inductance(in){}
+
+  std::complex<double>get_impedance(double omega) const {
+    std::complex<double> impedance(0, (omega * inductance));
+    return impedance;
+  }
+private:
+  int node1;
+  int node2;
+  double inductance;
+};
+
 int node_to_number(std::string node){
-  std::string number;
-  int hehe;
+  std::string node_label;
+  int node_number;
 
   if(node != "0"){
 
     for(int i = 1; i < node.size(); i++){
-      number.push_back(node[i]);
+      node_label.push_back(node[i]);
     }
 
-      hehe = std::stoi(number);
+      node_number = std::stoi(node_label);
 
-    return hehe;
+    return node_number;
   }
 
   return 0;
@@ -89,46 +148,38 @@ int main(){
     }
  
     std::string component;
-    std::vector<std::string> haha;
+    std::vector<std::string> substrs;
     std::vector<Resistor> Two_T; 
  
     while(std::getline(infile, component)){
-        std::stringstream hehe(component);
+        std::stringstream line(component);
 
-        while(hehe.good()){
+        while(line.good()){
           std::string substr;
 
-          std::getline(hehe, substr, ' ');
+          std::getline(line, substr, ' ');
 
-          haha.push_back(substr);
+          substrs.push_back(substr);
         }
 
-        if(haha[0][0] == 'R'){
-            Resistor R;
-            R.node1 = node_to_number(haha[1]);
-            R.node2 = node_to_number(haha[2]);
-            R.resistance = prefix_convertor(haha[3]);
+        if(substrs[0][0] == 'R'){
+            Resistor R(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
             
             Two_T.push_back(R);
         }
-        else if(haha[0][0] == 'C'){
-            Resistor R;
-            R.node1 = node_to_number(haha[1]);
-            R.node2 = node_to_number(haha[2]);
-            R.resistance = prefix_convertor(haha[3]);
+        else if(substrs[0][0] == 'C'){
+            Resistor R(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
 
             Two_T.push_back(R);
         }
 
-        haha.clear();
+        substrs.clear();
     }
 
-    std::cout << Two_T[0].node1 << std::endl;
-    std::cout << Two_T[0].node2 << std::endl;
-    std::cout << Two_T[0].resistance << std::endl;
-    std::cout << Two_T[1].node1 << std::endl;
-    std::cout << Two_T[1].node2 << std::endl;
-    std::cout << Two_T[1].resistance << std::endl;
+    std::cout << Two_T[0].show_nodeinfo() << std::endl;
+    std::cout << "Reistance: " << Two_T[0].get_impedance(0) << std::endl;
+    std::cout << Two_T[1].show_nodeinfo() << std::endl;
+    std::cout << "Reistance: " << Two_T[1].get_impedance(0) << std::endl;
 
     infile.close();
 }

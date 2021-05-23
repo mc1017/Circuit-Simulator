@@ -60,7 +60,7 @@ private :
 
 class Inductor: public ImpedanceDevice{
 public:
-  Inductor(int n1, int n2, double c, double in): inductance(in){}
+  Inductor(int n1, int n2, double in): node1(n1), node2(n2), inductance(in){}
 
   std::complex<double>get_impedance(double omega) const {
     std::complex<double> impedance(0, (omega * inductance));
@@ -70,6 +70,29 @@ private:
   int node1;
   int node2;
   double inductance;
+};
+
+
+class sources{
+public:
+
+virtual std::complex<double> get_src_value(double phase) const{
+
+}
+
+virtual ~sources() { }
+};
+
+class Voltage_source: public sources{
+public:
+
+    Voltage_source(int n1, int n2, double val): node1(n1), node2(n2), voltage(val){
+    }
+
+private:
+    int node1;
+    int node2;
+    double voltage;
 };
 
 int node_to_number(std::string node){

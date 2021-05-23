@@ -6,13 +6,8 @@
 #include <vector>
 #include <math.h>
 
-class impedance_devices{
-public:
 
-};
-
-class Resistor{
-public:
+struct Resistor{
   int node1;
   int node2;
   double resistance;
@@ -85,7 +80,7 @@ double prefix_convertor(std::string value){
 
 int main(){
     std::ifstream infile; 
-    infile.open("testlist2.txt");
+    infile.open("testlist.txt");
  
     if(!infile.is_open()){
         std::cout << "error opening file" << std::endl;

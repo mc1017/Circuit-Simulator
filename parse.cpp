@@ -214,6 +214,8 @@ int main(){
   ImpedanceDevice* tmp_id;
   std::vector<Source*> sources; 
   Source* tmp_s;
+  // frequency step parameters, we assume ac analysis always done in decades
+  double f_start, f_stop, ppd;
  
   while(std::getline(infile, component)){
     std::stringstream line(component);
@@ -250,6 +252,14 @@ int main(){
 
       sources.push_back(tmp_s);
     }
+    else if(substrs[0] == ".ac"){
+      ppd = prefix_convertor(substrs[2]);
+      f_start = prefix_convertor(substrs[3]);
+      f_stop = prefix_convertor(substrs[4]);
+    }
+    else if(substrs[0] == ".end"){
+      infile.close();
+    }
         
 
     substrs.clear();
@@ -267,6 +277,10 @@ int main(){
     std::cout << "Source Value: " << sources[i]->get_value() << std::endl;
     std::cout << "Source Type: " << sources[i]->get_type() << std::endl;
   }
+
+  std::cout << "Number of points per decade: " << ppd << std::endl;
+  std::cout << "Start frequency: " << f_start << " Hz" << std::endl;
+  std::cout << "Stop frequency: " << f_stop << " Hz" << std::endl;
 
 }
 

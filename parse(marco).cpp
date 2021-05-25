@@ -226,10 +226,35 @@ class non_linear_devices{
 
   virtual NodePoint give_nodeinfo() const = 0;
 
-  virtual std::string get_type() const =0;
+  virtual std::string get_model() const =0;
 };
 
-class bjt: public non_linear_devices{
+
+class Diode: public non_linear_devices{
+public: 
+  std::string show_nodeinfo() const {
+    return "Nodal Coordinates: (" + std::to_string(node_an) + +", " std::to_string(node_cat)")";
+  }
+  std::string get_model(){
+    return "Model: " + model;
+  }
+
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node_an;
+    N.y = node_cat;
+
+    return N;
+  }
+
+private:
+  int node_an;
+  int node_cat;
+  std::string model;
+}
+
+class BJT: public non_linear_devices{
 public: 
   std::string show_nodeinfo() const {
     return "Nodal Coordinates: (" + std::to_string(node_c) + ", " + std::to_string(node_b) + +", " std::to_string(node_e)")";
@@ -245,8 +270,8 @@ public:
     return N;
   }
 
-  std::string get_type() const {
-    return "Type: " + type;
+  std::string get_model() const {
+    return "Model: " + model;
   }
 
 
@@ -254,7 +279,7 @@ private:
   int node_c;
   int node_b;
   int node_e;
-  std::string type;
+  std::string model;
 
 }
 
@@ -276,7 +301,7 @@ public:
   }
 
   std::string get_type() const {
-    return "Type: " + type;
+    return "Model: " + model;
   }
 
 
@@ -284,7 +309,7 @@ private:
   int node_d;
   int node_g;
   int node_s;
-  std::string type;
+  std::string model;
 
 }
 

@@ -21,9 +21,11 @@ struct NodeTri{
 
 class ImpedanceDevice{
 public:
+    virtual std::string show_nodeinfo() const = 0;
+
     virtual std::complex<double> get_impedance(double omega) const = 0;
 
-    virtual std::string show_nodeinfo() const = 0;
+    virtual std::complex<double> get_conductance(double omega) const = 0;
 
     virtual NodePoint give_nodeinfo() const = 0;
 
@@ -43,6 +45,12 @@ public:
         std::complex<double> impedance(resistance);
 
         return impedance;
+    }
+
+    std::complex<double> get_conductance(double omega) const {
+        std::complex<double> conductance(1/resistance);
+
+        return conductance;
     }
 
     NodePoint give_nodeinfo() const {
@@ -75,6 +83,12 @@ public:
         return impedance;
     }
 
+    std::complex<double> get_conductance(double omega) const {
+        std::complex<double> conductance(0, omega * capacitance);
+
+        return conductance;
+    }
+
     NodePoint give_nodeinfo() const {
         NodePoint N;
 
@@ -103,6 +117,12 @@ public:
         std::complex<double> impedance(0, (omega * inductance));
 
         return impedance;
+    }
+
+    std::complex<double> get_conductance(double omega) const {
+        std::complex<double> conductance(0, -1/(omega * inductance));
+
+        return conductance;
     }
 
     NodePoint give_nodeinfo() const {

@@ -7,11 +7,18 @@
 #include <math.h>
 #include <complex>
 
+struct NodePoint{
+  int x;
+  int y;
+};
+
 class ImpedanceDevice{
 public:
   virtual std::complex<double> get_impedance(double omega) const = 0;
 
   virtual std::string show_nodeinfo() const = 0;
+
+  virtual NodePoint give_nodeinfo() const = 0;
 
   virtual ~ImpedanceDevice() { }
 };
@@ -32,6 +39,15 @@ public:
     return impedance;
   }
 
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node1;
+    N.y = node2;
+
+    return N;
+  }
+
 private:
   int node1;
   int node2;
@@ -46,10 +62,20 @@ public:
   std::string show_nodeinfo() const {
     return "Nodal Coordinates: (" + std::to_string(node1) + ", " + std::to_string(node2) + ")";
   }
+
   std::complex<double>get_impedance(double omega) const {
     std::complex<double> impedance(0, - 1/(omega * capacitance));
 
     return impedance;
+  }
+
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node1;
+    N.y = node2;
+
+    return N;
   }
  
 private :
@@ -73,6 +99,15 @@ public:
     return impedance;
   }
 
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node1;
+    N.y = node2;
+
+    return N;
+  }
+
 private:
   int node1;
   int node2;
@@ -81,11 +116,13 @@ private:
 
 class Source{
 public:
-  virtual double get_value() const = 0;
+  virtual double get_magnitude() const = 0;
 
   virtual std::string show_nodeinfo() const = 0;
 
   virtual std::string get_type() const = 0;
+
+  virtual NodePoint give_nodeinfo() const = 0;
 
   virtual ~Source() { }
 };
@@ -98,12 +135,21 @@ public:
     return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
   }
 
-  double get_value() const {
+  double get_magnitude() const {
     return voltage;
   }
 
   std::string get_type() const {
     return "DC V";
+  }
+
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node_plus;
+    N.y = node_minus;
+
+    return N;
   }
 
 private:
@@ -120,7 +166,7 @@ public:
     return "Nodal Coordinates: (" + std::to_string(node_in) + ", " + std::to_string(node_out) + ")";
   }
 
-  double get_value() const {
+  double get_magnitude() const {
     return current;
   }
 
@@ -128,10 +174,51 @@ public:
     return "DC I";
   }
 
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node_in;
+    N.y = node_out;
+
+    return N;
+  }
+
 private:
   int node_in;
   int node_out;
   double current;
+};
+
+class ACVSource : public Source{
+public:
+  DCISource(int n_p, int n_m, double i) : node_in(n_in), node_out(n_out), current(i){ }
+
+  std::string show_nodeinfo() const {
+    return "Nodal Coordinates: (" + std::to_string(node_in) + ", " + std::to_string(node_out) + ")";
+  }
+
+  double get_magnitude() const {
+    return current;
+  }
+
+  std::string get_type() const {
+    return "DC I";
+  }
+
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node_in;
+    N.y = node_out;
+
+    return N;
+  }
+
+private:
+  int node_plus;
+  int node_minus;
+  double magnitude;
+  double phase;
 };
 
 int node_to_number(std::string node){
@@ -242,7 +329,7 @@ int main(){
 
       impedance_devices.push_back(tmp_id);
     }
-    else if(substrs[0][0] == 'V'){
+    else if(substrs[0][0] == 'V' && substrs[4][0] != 'A'){
       tmp_s = new DCVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
 
       sources.push_back(tmp_s);
@@ -259,8 +346,7 @@ int main(){
     }
     else if(substrs[0] == ".end"){
       infile.close();
-    }
-        
+    }      
 
     substrs.clear();
   }
@@ -269,12 +355,14 @@ int main(){
     
   for(int i = 0; i < impedance_devices.size(); i++){
     std::cout << impedance_devices[i]->show_nodeinfo() << std::endl;
+    std::cout << impedance_devices[i]->give_nodeinfo().x << std::endl;
+    std::cout << impedance_devices[i]->give_nodeinfo().y << std::endl;
     std::cout << "Impedance: " << impedance_devices[i]->get_impedance(1) << std::endl;
   }
 
   for(int i = 0; i < sources.size(); i++){
     std::cout << sources[i]->show_nodeinfo() << std::endl;
-    std::cout << "Source Value: " << sources[i]->get_value() << std::endl;
+    std::cout << "Source Value: " << sources[i]->get_magnitude() << std::endl;
     std::cout << "Source Type: " << sources[i]->get_type() << std::endl;
   }
 

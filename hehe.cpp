@@ -729,6 +729,7 @@ int main(){
         std::cout << impedance_devices[i]->give_nodeinfo().x << std::endl;
         std::cout << impedance_devices[i]->give_nodeinfo().y << std::endl;
         std::cout << "Impedance: " << impedance_devices[i]->get_impedance(1) << std::endl;
+        std::cout << "Conductance: " << impedance_devices[i]->get_conductance(1) << std::endl;
         std::cout << std::endl;
     }
 

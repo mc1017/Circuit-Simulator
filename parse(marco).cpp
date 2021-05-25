@@ -12,6 +12,12 @@ struct NodePoint{
   int y;
 };
 
+struct NodeTri{
+  int x;
+  int y;
+  int z;
+};
+
 class ImpedanceDevice{
 public:
   virtual std::complex<double> get_impedance(double omega) const = 0;
@@ -189,9 +195,59 @@ private:
   double current;
 };
 
-class ACVSource : public Source{
+class Source{
 public:
-  DCISource(int n_p, int n_m, double i) : node_in(n_in), node_out(n_out), current(i){ }
+  virtual double get_magnitude() const = 0;
+
+  virtual double get_phase() const = 0;
+
+  virtual std::string show_nodeinfo() const = 0;
+
+  virtual std::string get_type() const = 0;
+
+  virtual NodePoint give_nodeinfo() const = 0;
+
+  virtual ~Source() { }
+};
+
+class DCVSource : public Source{
+public:
+  DCVSource(int n_p, int n_m, double v) : node_plus(n_p), node_minus(n_m), voltage(v) { }
+
+  std::string show_nodeinfo() const {
+    return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
+  }
+
+  double get_magnitude() const {
+    return voltage;
+  }
+
+  double get_phase() const { 
+    return 0;
+  }
+
+  std::string get_type() const {
+    return "DC V";
+  }
+
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node_plus;
+    N.y = node_minus;
+
+    return N;
+  }
+
+private:
+  int node_plus;
+  int node_minus;
+  double voltage;
+};
+
+class DCISource : public Source{
+public:
+  DCISource(int n_in, int n_out, double i) : node_in(n_in), node_out(n_out), current(i){ }
 
   std::string show_nodeinfo() const {
     return "Nodal Coordinates: (" + std::to_string(node_in) + ", " + std::to_string(node_out) + ")";
@@ -199,6 +255,10 @@ public:
 
   double get_magnitude() const {
     return current;
+  }
+
+  double get_phase() const { 
+    return 0;
   }
 
   std::string get_type() const {
@@ -215,16 +275,89 @@ public:
   }
 
 private:
+  int node_in;
+  int node_out;
+  double current;
+};
+
+class ACVSource : public Source{
+public:
+  ACVSource(int n_p, int n_m, double v_m, double v_p) : node_plus(n_p), node_minus(n_m), amplitude(v_m), phase(v_p){ }
+
+  std::string show_nodeinfo() const {
+    return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
+  }
+
+  double get_magnitude() const {
+    return amplitude;
+  }
+
+  double get_phase() const {
+    return phase;
+  }
+
+  std::string get_type() const {
+    return "AC V";
+  }
+
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node_plus;
+    N.y = node_minus;
+
+    return N;
+  }
+
+private:
   int node_plus;
   int node_minus;
-  double magnitude;
+  double amplitude;
+  double phase;
+};
+
+class ACISource : public Source{
+public:
+  ACISource(int n_in, int n_out, double i_m, double i_p) : node_in(n_in), node_out(n_out), amplitude(i_m), phase(i_p){ }
+
+  std::string show_nodeinfo() const {
+    return "Nodal Coordinates: (" + std::to_string(node_in) + ", " + std::to_string(node_out) + ")";
+  }
+
+  double get_magnitude() const {
+    return amplitude;
+  }
+
+  double get_phase() const {
+    return phase;
+  }
+
+  std::string get_type() const {
+    return "AC I";
+  }
+
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node_in;
+    N.y = node_out;
+
+    return N;
+  }
+
+private:
+  int node_in;
+  int node_out;
+  double amplitude;
   double phase;
 };
 
 class non_linear_devices{
   virtual std::string show_nodeinfo() const = 0;
 
-  virtual NodePoint give_nodeinfo() const = 0;
+  virtual NodePoint give_binodeinfo() const = 0;
+
+  virtual NodeTri give_trinodeinfo() const =0;
 
   virtual std::string get_model() const =0;
 };
@@ -233,13 +366,13 @@ class non_linear_devices{
 class Diode: public non_linear_devices{
 public: 
   std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_an) + +", " std::to_string(node_cat)")";
+    return "Nodal Coordinates: (" + std::to_string(node_an) + ", " + std::to_string(node_cat) +")";
   }
   std::string get_model(){
     return "Model: " + model;
   }
 
-  NodePoint give_nodeinfo() const {
+  NodePoint give_binodeinfo() const {
     NodePoint N;
 
     N.x = node_an;
@@ -252,16 +385,16 @@ private:
   int node_an;
   int node_cat;
   std::string model;
-}
+};
 
 class BJT: public non_linear_devices{
 public: 
   std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_c) + ", " + std::to_string(node_b) + +", " std::to_string(node_e)")";
+    return "Nodal Coordinates: (" + std::to_string(node_c) + ", " + std::to_string(node_b) + ", " + std::to_string(node_e) +")";
   }
 
-  NodePoint give_nodeinfo() const {
-    NodePoint N;
+  NodeTri give_trinodeinfo() const {
+    NodeTri N;
 
     N.x = node_c;
     N.y = node_b;
@@ -281,17 +414,17 @@ private:
   int node_e;
   std::string model;
 
-}
+};
 
 
 class MOSFET: public non_linear_devices{
 public: 
   std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_d) + ", " + std::to_string(node_g) + +", " std::to_string(node_s)")";
+    return "Nodal Coordinates: (" + std::to_string(node_d) + ", " + std::to_string(node_g) + ", "  + std::to_string(node_s) + ")";
   }
 
-  NodePoint give_nodeinfo() const {
-    NodePoint N;
+  NodeTri give_trinodeinfo() const {
+    NodeTri N;
 
     N.x = node_d;
     N.y = node_g;
@@ -311,7 +444,7 @@ private:
   int node_s;
   std::string model;
 
-}
+};
 
 int node_to_number(std::string node){
   std::string node_label;

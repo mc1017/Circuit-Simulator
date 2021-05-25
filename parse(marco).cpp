@@ -352,6 +352,56 @@ private:
   double phase;
 };
 
+class VCCSource : public Source{
+public:
+  VCCSource(int n_p, int n_m, int c_p, int c_m, double g_m) : node_plus(n_p), node_minus(n_m), control_plus(c_p), control_minus(c_m), transconductance(g_m){ }
+
+  std::string show_nodeinfo() const {
+    return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
+  }
+
+  double get_magnitude() const {
+    return 0;
+  }
+
+  double get_phase() const {
+    return 0;
+  }
+
+  double get_gm() const {
+    return transconductance;
+  }
+
+  std::string get_type() const {
+    return "VCCS";
+  }
+
+  NodePoint give_nodeinfo() const {
+    NodePoint N;
+
+    N.x = node_plus;
+    N.y = node_minus;
+
+    return N;
+  }
+
+  NodePoint give_controlinfo() const {
+    NodePoint C;
+
+    C.x = control_plus;
+    C.y = control_minus;
+
+    return C;
+  }
+
+private:
+  int node_plus;
+  int node_minus;
+  int control_plus;
+  int control_minus;
+  double transconductance;
+};
+
 class non_linear_devices{
   virtual std::string show_nodeinfo() const = 0;
 

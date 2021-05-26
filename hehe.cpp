@@ -7,6 +7,7 @@
 #include <math.h>
 #include <complex>
 #include <float.h>
+#include "library/Eigen/Dense"
 
 struct NodePoint{
     int x;
@@ -628,10 +629,14 @@ int main(){
  
     std::string component;
     std::vector<std::string> substrs;
+
     std::vector<ImpedanceDevice*> impedance_devices, ss_impedance_devices; 
     ImpedanceDevice* tmp_id;
+    ImpedanceDevice* tmp_id2;
+
     std::vector<Source*> sources, ss_sources; 
     Source* tmp_s;
+
     std::vector<NonLinearDevice*> non_linear_devices;
     NonLinearDevice* tmp_nld;
     // frequency step parameters, we assume ac analysis always done in decades
@@ -651,21 +656,26 @@ int main(){
             tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
             
             impedance_devices.push_back(tmp_id);
+            ss_impedance_devices.push_back(tmp_id);
         }
         else if(substrs[0][0] == 'C'){
             tmp_id = new Capacitor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
 
             impedance_devices.push_back(tmp_id);
+            ss_impedance_devices.push_back(tmp_id);
         }
         else if(substrs[0][0] == 'L'){
             tmp_id = new Inductor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
 
             impedance_devices.push_back(tmp_id);
+            ss_impedance_devices.push_back(tmp_id);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] != 'A'){
             tmp_s = new DCVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
-
+            tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), DBL_MIN);
+            //ss equivalent of DC Voltage Source is short circuit, represented by resistor of least possible value in C++
             sources.push_back(tmp_s);
+            ss_impedance_devices.push_back(tmp_id);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] == 'A'){
             tmp_s = new ACVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]));
@@ -675,10 +685,8 @@ int main(){
         }
         else if(substrs[0][0] == 'I' && substrs[3][0] != 'A'){
             tmp_s = new DCISource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
-            tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), DBL_MIN);
-            //ss equivalent of DC Current Source is shrt circuit, represented by resistor of least possible value in C++
+            
             sources.push_back(tmp_s);
-            ss_impedance_devices.push_back(tmp_id);
         }
         else if(substrs[0][0] == 'I' && substrs[3][0] == 'A'){
             tmp_s = new ACISource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]));

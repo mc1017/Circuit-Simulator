@@ -422,7 +422,6 @@ public:
     virtual ~NonLinearDevice() { }
 };
 
-
 class Diode: public NonLinearDevice{
 public:
 
@@ -499,7 +498,6 @@ private:
     int node_e;
     std::string model;
 };
-
 
 class MOSFET: public NonLinearDevice{
 public: 
@@ -618,6 +616,24 @@ double get_AC_magnitude(std::string ac_param){
     return prefix_convertor(magnitude);
 }
 
+int max_node_number(int node_max, int node1, int node2, int node3, int node4){
+    
+    if((node1 > node_max) && (node1 >= node2) && (node1 >= node3) && (node1 >= node4)){
+        return node1;
+    }
+    else if((node2 > node_max) && (node2 >= node1) && (node2 >= node3) && (node2 >= node4)){
+        return node2;
+    }
+    else if((node3 > node_max) && (node3 >= node1) && (node3 >= node2) && (node3 >= node4)){
+        return node3;
+    }
+    else if((node4 > node_max) && (node4 >= node1) && (node4 >= node2) && (node4 >= node3)){
+        return node4;
+    }
+
+    return node_max;
+}
+
 int main(){
     std::ifstream infile; 
     infile.open("testlist.txt");
@@ -641,6 +657,7 @@ int main(){
     NonLinearDevice* tmp_nld;
     // frequency step parameters, we assume ac analysis always done in decades
     double f_start, f_stop, n_ppd;
+    int n_max = 0;
  
     while(std::getline(infile, component)){
         std::stringstream line(component);
@@ -657,18 +674,21 @@ int main(){
             
             impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'C'){
             tmp_id = new Capacitor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
 
             impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'L'){
             tmp_id = new Inductor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
 
             impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] != 'A'){
             tmp_s = new DCVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
@@ -676,47 +696,55 @@ int main(){
             //ss equivalent of DC Voltage Source is short circuit, represented by resistor of least possible value in C++
             sources.push_back(tmp_s);
             ss_impedance_devices.push_back(tmp_id);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] == 'A'){
             tmp_s = new ACVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]));
 
             sources.push_back(tmp_s);
             ss_sources.push_back(tmp_s);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'I' && substrs[3][0] != 'A'){
             tmp_s = new DCISource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
             
             sources.push_back(tmp_s);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'I' && substrs[3][0] == 'A'){
             tmp_s = new ACISource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]));
 
             sources.push_back(tmp_s);
             ss_sources.push_back(tmp_s);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'G'){
             tmp_s = new VCCSource(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), node_to_number(substrs[4]), prefix_convertor(substrs[5]));
 
             sources.push_back(tmp_s);
             //what is ss equavalent of VCCS?
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), node_to_number(substrs[4]));
         }
         else if(substrs[0][0] == 'D'){
             tmp_nld = new Diode(node_to_number(substrs[1]), node_to_number(substrs[2]), substrs[3]);
 
             non_linear_devices.push_back(tmp_nld);
             //include ss equivalent for diode
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'Q'){
             tmp_nld = new BJT(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), substrs[4]);
 
             non_linear_devices.push_back(tmp_nld);
             //include ss equivalent for BJT
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), 0);
         }
         else if(substrs[0][0] == 'M'){
             tmp_nld = new MOSFET(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), substrs[4]);
 
             non_linear_devices.push_back(tmp_nld);
             //include ss equivalent for MOSFET
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), 0);
         }
         else if(substrs[0] == ".ac"){
             n_ppd = prefix_convertor(substrs[2]);
@@ -763,6 +791,7 @@ int main(){
     std::cout << "Number of points per decade: " << n_ppd << std::endl;
     std::cout << "Start frequency: " << f_start << " Hz" << std::endl;
     std::cout << "Stop frequency: " << f_stop << " Hz" << std::endl;
+    std::cout << "Total number of nodes: " << n_max << std::endl;
 
 }
 

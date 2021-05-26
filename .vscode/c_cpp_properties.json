@@ -3,6 +3,7 @@
         {
             "name": "Mac",
             "includePath": [
+
                 "${workspaceFolder}/**"
             ],
             "defines": [],
@@ -11,6 +12,7 @@
             "cStandard": "gnu17",
             "cppStandard": "gnu++14",
             "intelliSenseMode": "macos-gcc-x64"
+
         }
     ],
     "version": 4

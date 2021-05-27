@@ -645,7 +645,7 @@ double return_tf_magnitude(std::complex<double> source, std::complex<double> out
 double return_tf_phase(std::complex<double> source, std::complex<double> output_node){
     double phase_change;
 
-    phase_change = (std::arg(source) - std::arg(output_node)) * 180 / M_PI;
+    phase_change = (std::arg(output_node) - std::arg(source)) * 180 / M_PI;
 
     return phase_change;
 }

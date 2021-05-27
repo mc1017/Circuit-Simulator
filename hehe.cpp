@@ -634,6 +634,22 @@ int max_node_number(int node_max, int node1, int node2, int node3, int node4){
     return node_max;
 }
 
+double return_tf_magnitude(std::complex<double> source, std::complex<double> output_node){
+    double gain;
+
+    gain = std::abs(output_node) / std::abs(source);
+
+    return gain;
+}
+
+double return_tf_phase(std::complex<double> source, std::complex<double> output_node){
+    double phase_change;
+
+    phase_change = (std::arg(source) - std::arg(output_node)) * 180 / M_PI;
+
+    return phase_change;
+}
+
 using namespace Eigen;
 
 int main(){
@@ -658,7 +674,7 @@ int main(){
     std::vector<NonLinearDevice*> non_linear_devices;
     NonLinearDevice* tmp_nld;
     // frequency step parameters, we assume ac analysis always done in decades
-    double f_start, f_stop, n_ppd;
+    double f_start, f_stop, n_ppd, f, omega;
     int n_max = 0;
  
     while(std::getline(infile, component)){
@@ -762,14 +778,14 @@ int main(){
 
     infile.close();
     
-    for(int i = 0; i < impedance_devices.size(); i++){
-        std::cout << impedance_devices[i]->show_nodeinfo() << std::endl;
-        std::cout << impedance_devices[i]->give_nodeinfo().x << std::endl;
-        std::cout << impedance_devices[i]->give_nodeinfo().y << std::endl;
-        std::cout << "Impedance: " << impedance_devices[i]->get_impedance(1) << std::endl;
-        std::cout << "Conductance: " << impedance_devices[i]->get_conductance(1) << std::endl;
-        std::cout << std::endl;
-    }
+    //for(int i = 0; i < impedance_devices.size(); i++){
+        //std::cout << impedance_devices[i]->show_nodeinfo() << std::endl;
+        //std::cout << impedance_devices[i]->give_nodeinfo().x << std::endl;
+        //std::cout << impedance_devices[i]->give_nodeinfo().y << std::endl;
+        //std::cout << "Impedance: " << impedance_devices[i]->get_impedance(1) << std::endl;
+        //std::cout << "Conductance: " << impedance_devices[i]->get_conductance(1) << std::endl;
+        //std::cout << std::endl;
+    //}
 
     //for(int i = 0; i < sources.size(); i++){
         //std::cout << sources[i]->show_nodeinfo() << std::endl;
@@ -790,24 +806,72 @@ int main(){
         //std::cout << std::endl;
     //}
 
-    std::cout << "Number of points per decade: " << n_ppd << std::endl;
-    std::cout << "Start frequency: " << f_start << " Hz" << std::endl;
-    std::cout << "Stop frequency: " << f_stop << " Hz" << std::endl;
-    std::cout << "Total number of nodes: " << n_max << std::endl;
+    //std::cout << "Number of points per decade: " << n_ppd << std::endl;
+    //std::cout << "Start frequency: " << f_start << " Hz" << std::endl;
+    //std::cout << "Stop frequency: " << f_stop << " Hz" << std::endl;
+    //std::cout << "Total number of nodes: " << n_max << std::endl;
 
-    MatrixXcd matrixA(n_max,n_max);
+    MatrixXcd matrixA(n_max,n_max), matrixB(n_max, 1);
     matrixA.setZero();
+    matrixB.setZero();
 
-    std::complex<double> negative(-1, 0);
+    std::complex<double> negative(-1, 0), zero(0,0), one(1,0);
+    std::complex<double> ACSource(ss_sources[0]->get_magnitude() * cos(ss_sources[0]->get_phase() * M_PI / 180), ss_sources[0]->get_magnitude() * sin(ss_sources[0]->get_phase() * M_PI / 180));
+    matrixB(0,0) = ACSource;
 
-    for(int i = 0; i < ss_impedance_devices.size(); i++){
-        matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) = negative * ss_impedance_devices[i]->get_conductance(1);
-        matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) = negative * ss_impedance_devices[i]->get_conductance(1);
-        matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) + ss_impedance_devices[i]->get_conductance(1);
-        matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) + ss_impedance_devices[i]->get_conductance(1);
+    std::vector<double> frequencies;
+    std::vector<double> magnitude;
+    std::vector<double> phase;
+
+    int n_output;
+    std::cout << "Which node is the output node?" << std::endl;
+    std::cin >> n_output;
+
+    for(int n = 0; f < f_stop; n++){
+        f = f_start * pow(10, n/n_ppd);
+        frequencies.push_back(f);
+        omega = 2 * M_PI * f;
+
+        for(int i = 0; i < ss_impedance_devices.size(); i++){
+
+            if(ss_impedance_devices[i]->give_nodeinfo().x != 0 && ss_impedance_devices[i]->give_nodeinfo().y != 0){
+                matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) = negative * ss_impedance_devices[i]->get_conductance(omega);
+                matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) = negative * ss_impedance_devices[i]->get_conductance(omega);
+                matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) + ss_impedance_devices[i]->get_conductance(omega);
+                matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) + ss_impedance_devices[i]->get_conductance(omega);
+            }
+            else if(ss_impedance_devices[i]->give_nodeinfo().x == 0 && ss_impedance_devices[i]->give_nodeinfo().y != 0){
+                matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) + ss_impedance_devices[i]->get_conductance(omega);
+            }
+            else if(ss_impedance_devices[i]->give_nodeinfo().x != 0 && ss_impedance_devices[i]->give_nodeinfo().y == 0){
+                matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) + ss_impedance_devices[i]->get_conductance(omega);
+            }
+        
+        }
+
+        for(int i = 0; i < n_max; i++){
+            matrixA(ss_sources[0]->give_nodeinfo().x - 1,i) = zero;
+        }
+
+        matrixA(ss_sources[0]->give_nodeinfo().x - 1,0) = one;
+
+        MatrixXcd matrixX = matrixA.fullPivLu().solve(matrixB);
+
+        magnitude.push_back(return_tf_magnitude(ACSource, matrixX(n_output - 1, 0)));
+        phase.push_back(return_tf_phase(ACSource, matrixX(n_output - 1, 0)));
     }
 
-    std::cout << matrixA << std::endl;
+    for(int i = 0; i < magnitude.size(); i++){
+        std::cout << magnitude[i] << std::endl;
+    }
+
+    //for(int i = 0; i < frequencies.size(); i++){
+        //std::cout << frequencies[i] << std::endl;
+    //}
+
+    //for(int i = 0; i < phase.size(); i++){
+        //std::cout << phase[i] << std::endl;
+    //}
 
 }
 

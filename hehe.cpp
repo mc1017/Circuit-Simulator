@@ -634,9 +634,11 @@ int max_node_number(int node_max, int node1, int node2, int node3, int node4){
     return node_max;
 }
 
+using namespace Eigen;
+
 int main(){
     std::ifstream infile; 
-    infile.open("testlist.txt");
+    infile.open("lpf.txt");
  
     if(!infile.is_open()){
         std::cout << "error opening file" << std::endl;
@@ -769,29 +771,43 @@ int main(){
         std::cout << std::endl;
     }
 
-    for(int i = 0; i < sources.size(); i++){
-        std::cout << sources[i]->show_nodeinfo() << std::endl;
-        std::cout << "Source Magnitude: " << sources[i]->get_magnitude() << std::endl;
-        std::cout << "Source Phase: " << sources[i]->get_phase() << std::endl;
-        std::cout << "Source Type: " << sources[i]->get_type() << std::endl;
-        if(sources[i]->get_type() == "VCCS"){
-            std::cout << "Control +: " << sources[i]->give_controlinfo().x << std::endl;
-            std::cout << "Control -: " << sources[i]->give_controlinfo().y << std::endl;
-            std::cout << "Transconductance: " << sources[i]->get_gm() << std::endl;
-        }
-        std::cout << std::endl;
-    }
+    //for(int i = 0; i < sources.size(); i++){
+        //std::cout << sources[i]->show_nodeinfo() << std::endl;
+        //std::cout << "Source Magnitude: " << sources[i]->get_magnitude() << std::endl;
+        //std::cout << "Source Phase: " << sources[i]->get_phase() << std::endl;
+        //std::cout << "Source Type: " << sources[i]->get_type() << std::endl;
+        //if(sources[i]->get_type() == "VCCS"){
+            //std::cout << "Control +: " << sources[i]->give_controlinfo().x << std::endl;
+            //std::cout << "Control -: " << sources[i]->give_controlinfo().y << std::endl;
+            //std::cout << "Transconductance: " << sources[i]->get_gm() << std::endl;
+        //}
+        //std::cout << std::endl;
+    //}
 
-    for(int i = 0; i < non_linear_devices.size(); i++){
-        std::cout << non_linear_devices[i]->show_nodeinfo() << std::endl;
-        std::cout << "Model: " << non_linear_devices[i]->get_model() << std::endl;
-        std::cout << std::endl;
-    }
+    //for(int i = 0; i < non_linear_devices.size(); i++){
+        //std::cout << non_linear_devices[i]->show_nodeinfo() << std::endl;
+        //std::cout << "Model: " << non_linear_devices[i]->get_model() << std::endl;
+        //std::cout << std::endl;
+    //}
 
     std::cout << "Number of points per decade: " << n_ppd << std::endl;
     std::cout << "Start frequency: " << f_start << " Hz" << std::endl;
     std::cout << "Stop frequency: " << f_stop << " Hz" << std::endl;
     std::cout << "Total number of nodes: " << n_max << std::endl;
+
+    MatrixXcd matrixA(n_max,n_max);
+    matrixA.setZero();
+
+    std::complex<double> negative(-1, 0);
+
+    for(int i = 0; i < ss_impedance_devices.size(); i++){
+        matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) = negative * ss_impedance_devices[i]->get_conductance(1);
+        matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) = negative * ss_impedance_devices[i]->get_conductance(1);
+        matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) + ss_impedance_devices[i]->get_conductance(1);
+        matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) + ss_impedance_devices[i]->get_conductance(1);
+    }
+
+    std::cout << matrixA << std::endl;
 
 }
 

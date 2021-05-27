@@ -1,0 +1,6 @@
+V1 N001 0 AC(1 0)
+R1 N001 N002 28k
+C1 N002 0 1µ
+*Low pass filter
+.ac dec 10 10 100k
+.end

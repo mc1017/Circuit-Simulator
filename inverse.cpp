@@ -1,6 +1,6 @@
 #include <iostream>
 #include <complex>
-#include "eigen/Eigen/Dense"
+#include "library/Eigen/Dense"
 
 using namespace std;
 using namespace Eigen;

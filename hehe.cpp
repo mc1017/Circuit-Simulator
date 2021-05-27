@@ -853,7 +853,7 @@ int main(){
             matrixA(ss_sources[0]->give_nodeinfo().x - 1,i) = zero;
         }
 
-        matrixA(ss_sources[0]->give_nodeinfo().x - 1,0) = one;
+        matrixA(ss_sources[0]->give_nodeinfo().x - 1,ss_sources[0]->give_nodeinfo().x - 1) = one;
 
         MatrixXcd matrixX = matrixA.fullPivLu().solve(matrixB);
 

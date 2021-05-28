@@ -637,9 +637,7 @@ int max_node_number(int node_max, int node1, int node2, int node3, int node4){
 double return_tf_magnitude(std::complex<double> source, std::complex<double> output_node){
     double source_mag, output_mag, gain;
 
-    source_mag = std::sqrt(pow(std::real(source), 2) + pow(std::imag(source),2));
-    output_mag = std::sqrt(pow(std::real(output_node), 2) + pow(std::imag(output_node),2));
-    gain = output_mag / source_mag;
+    gain = std::abs(output_node/source);
 
     return gain;
 }
@@ -656,7 +654,7 @@ using namespace Eigen;
 
 int main(){
     std::ifstream infile; 
-    infile.open("lpf.txt");
+    infile.open("testlpf.txt");
  
     if(!infile.is_open()){
         std::cout << "error opening file" << std::endl;
@@ -712,7 +710,7 @@ int main(){
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] != 'A'){
             tmp_s = new DCVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
-            tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), DBL_MIN);
+            tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor("1m"));
             //ss equivalent of DC Voltage Source is short circuit, represented by resistor of least possible value in C++
             sources.push_back(tmp_s);
             ss_impedance_devices.push_back(tmp_id);
@@ -816,7 +814,7 @@ int main(){
     MatrixXcd matrixA(n_max,n_max), matrixB(n_max, 1);
     matrixB.setZero();
 
-    std::complex<double> negative(-1, 0), zero(0,0), one(1,0);
+    std::complex<double> zero(0,0), one(1,0);
     std::complex<double> ACSource(ss_sources[0]->get_magnitude() * cos(ss_sources[0]->get_phase() * M_PI / 180), ss_sources[0]->get_magnitude() * sin(ss_sources[0]->get_phase() * M_PI / 180));
     matrixB(0,0) = ACSource;
 

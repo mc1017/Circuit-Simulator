@@ -635,9 +635,11 @@ int max_node_number(int node_max, int node1, int node2, int node3, int node4){
 }
 
 double return_tf_magnitude(std::complex<double> source, std::complex<double> output_node){
-    double gain;
+    double source_mag, output_mag, gain;
 
-    gain = std::abs(output_node) / std::abs(source);
+    source_mag = std::sqrt(pow(std::real(source), 2) + pow(std::imag(source),2));
+    output_mag = std::sqrt(pow(std::real(output_node), 2) + pow(std::imag(output_node),2));
+    gain = output_mag / source_mag;
 
     return gain;
 }
@@ -812,7 +814,6 @@ int main(){
     //std::cout << "Total number of nodes: " << n_max << std::endl;
 
     MatrixXcd matrixA(n_max,n_max), matrixB(n_max, 1);
-    matrixA.setZero();
     matrixB.setZero();
 
     std::complex<double> negative(-1, 0), zero(0,0), one(1,0);
@@ -823,7 +824,7 @@ int main(){
     std::vector<double> magnitude;
     std::vector<double> phase;
 
-    int n_output;
+    int n_output, hehe;
     std::cout << "Which node is the output node?" << std::endl;
     std::cin >> n_output;
 
@@ -832,11 +833,13 @@ int main(){
         frequencies.push_back(f);
         omega = 2 * M_PI * f;
 
+        matrixA.setZero();
+
         for(int i = 0; i < ss_impedance_devices.size(); i++){
 
             if(ss_impedance_devices[i]->give_nodeinfo().x != 0 && ss_impedance_devices[i]->give_nodeinfo().y != 0){
-                matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) = negative * ss_impedance_devices[i]->get_conductance(omega);
-                matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) = negative * ss_impedance_devices[i]->get_conductance(omega);
+                matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) - ss_impedance_devices[i]->get_conductance(omega);
+                matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) - ss_impedance_devices[i]->get_conductance(omega);
                 matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().x - 1, ss_impedance_devices[i]->give_nodeinfo().x - 1) + ss_impedance_devices[i]->get_conductance(omega);
                 matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) = matrixA(ss_impedance_devices[i]->give_nodeinfo().y - 1, ss_impedance_devices[i]->give_nodeinfo().y - 1) + ss_impedance_devices[i]->get_conductance(omega);
             }
@@ -859,11 +862,14 @@ int main(){
 
         magnitude.push_back(return_tf_magnitude(ACSource, matrixX(n_output - 1, 0)));
         phase.push_back(return_tf_phase(ACSource, matrixX(n_output - 1, 0)));
+
     }
 
     for(int i = 0; i < magnitude.size(); i++){
         std::cout << magnitude[i] << std::endl;
     }
+
+
 
     //for(int i = 0; i < frequencies.size(); i++){
         //std::cout << frequencies[i] << std::endl;

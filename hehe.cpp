@@ -910,7 +910,7 @@ int main(){
             matrixB.setZero();
 
             std::complex<double> ACSource(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
-            
+            superposition_impedances = ss_impedance_devices;
             if(ss_sources[i]->get_type() == "AC V" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
                 superposition_impedances = superposition(i, ss_sources, superposition_impedances);
 

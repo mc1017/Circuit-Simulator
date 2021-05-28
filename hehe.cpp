@@ -662,11 +662,9 @@ int max_node_number(int node_max, int node1, int node2, int node3, int node4){
 }
 
 double return_tf_magnitude(std::complex<double> source, std::complex<double> output_node){
-    double source_mag, output_mag, gain;
+    double gain;
 
-    source_mag = std::sqrt(pow(std::real(source),2) + pow(std::imag(source),2));
-    output_mag = std::sqrt(pow(std::real(output_node),2) + pow(std::imag(output_node),2));
-    gain = output_mag / source_mag;
+    gain = std::abs(output_node/source);
 
     return gain;
 }
@@ -880,8 +878,9 @@ int main(){
 
     for(int i = 0; i < ss_sources.size(); i++){
         if(ss_sources[i]->get_source_label() == s_input){
-            std::complex<double> InputSource(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
-            //std::cout << InputSource << std::endl;
+            std::complex<double> input_s(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
+
+            InputSource = input_s;
         }
     }
 
@@ -913,10 +912,6 @@ int main(){
             matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
 
             matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
-
-            //std::cout << matrixX << std::endl;
-            std::cout << InputSource << std::endl;
-            std::cout << return_tf_magnitude(InputSource, matrixX(n_output - 1, 0)) << std::endl;
         }
 
         magnitude.push_back(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0)));
@@ -944,9 +939,9 @@ int main(){
         //phase.push_back(return_tf_phase(ACSource, matrixX(n_output - 1, 0)));
     //}
 
-    //for(int i = 0; i < magnitude.size(); i++){
-        //std::cout << magnitude[i] << std::endl;
-    //}
+    for(int i = 0; i < magnitude.size(); i++){
+        std::cout << magnitude[i] << std::endl;
+    }
 
     //for(int i = 0; i < frequencies.size(); i++){
         //std::cout << frequencies[i] << std::endl;

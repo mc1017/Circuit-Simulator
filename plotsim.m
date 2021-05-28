@@ -7,7 +7,7 @@ close all;
 % and choosing File -> Export data as text
 
 %Input file name
-datafile = "transf2";
+datafile = "phtf2";
 
 %Get simulation data.
 simfile = importdata(datafile,'\t',1);
@@ -20,4 +20,5 @@ for n = 2:(size(simdata,2))
     plot(simdata(:,1),simdata(:,n)); %Add the data
     ylabel(simfile.colheaders(n));  %Label the Y axis with the column header
 end
+set(gca, 'XScale', 'log')
 xlabel('Frequency (Hz)'); %Label the x axis of the bottom plot

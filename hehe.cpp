@@ -677,6 +677,19 @@ double return_tf_phase(std::complex<double> source, std::complex<double> output_
     return phase_change;
 }
 
+std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<Source*> smallsig_sources, std::vector<ImpedanceDevice*> impedances){
+    ImpedanceDevice* tmp;
+
+    for(int i = 0; i < smallsig_sources.size(); i++){
+        if(smallsig_sources[i]->get_type() == "AC V" && i != input_source_index){
+            tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, prefix_convertor("1m"));
+            impedances.push_back(tmp);
+        }
+    }
+
+    return impedances;
+}
+
 using namespace Eigen;
 
 MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> ss_impedances, double omega){
@@ -862,12 +875,14 @@ int main(){
 
     MatrixXcd matrixA(n_max,n_max), matrixB(n_max, 1), matrixX(n_max, 1);
 
-    std::complex<double> zero(0,0), one(1,0), negative(-1,0), InputSource(0,0), ACSource(0,0);
-    //std::complex<double> ACSource(ss_sources[0]->get_magnitude() * cos(ss_sources[0]->get_phase() * M_PI / 180), ss_sources[0]->get_magnitude() * sin(ss_sources[0]->get_phase() * M_PI / 180));
+    std::complex<double> zero(0,0), one(1,0), negative(-1,0), InputSource(0,0);
 
     std::vector<double> frequencies;
     std::vector<double> magnitude;
     std::vector<double> phase;
+    std::vector<ImpedanceDevice*> superposition_impedances;
+
+    superposition_impedances = ss_impedance_devices;
 
     int n_output;
     std::string s_input;
@@ -896,20 +911,61 @@ int main(){
 
             std::complex<double> ACSource(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
             
-            if(ss_sources[i]->give_nodeinfo().x != 0){
-                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+            if(ss_sources[i]->get_type() == "AC V" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
+                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
+
+                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+
+                if(ss_sources[i]->give_nodeinfo().x != 0){
+                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                }
+                else{
+                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+                }
+
+                for(int j = 0; j < n_max; j++){
+                    matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
+                }
+
+                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
+            }
+            else if(ss_sources[i]->get_type() == "AC V" && ss_sources[i]->give_nodeinfo().x != 0 && ss_sources[i]->give_nodeinfo().y != 0){
+                //redo
+                
+                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
+
+                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+
+                if(ss_sources[i]->give_nodeinfo().x != 0){
+                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                }
+                else{
+                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+                }
+            }
+            else if(ss_sources[i]->get_type() == "AC I" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
+                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
+
+                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+
+                if(ss_sources[i]->give_nodeinfo().x != 0){
+                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                }
+                else{
+                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+                }
             }
             else{
+                //floating ACISource
+                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
+
+                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+
+                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = negative * ACSource;
+
                 matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
             }
 
-            matrixA = cons_conductance_matrix(matrixA, ss_impedance_devices, omega);
-
-            for(int j = 0; j < n_max; j++){
-                matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
-            }
-
-            matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
 
             matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
         }

@@ -6,7 +6,6 @@
 #include <vector>
 #include <math.h>
 #include <complex>
-#include <float.h>
 #include "library/Eigen/Dense"
 
 struct NodePoint{
@@ -882,8 +881,6 @@ int main(){
     std::vector<double> phase;
     std::vector<ImpedanceDevice*> superposition_impedances;
 
-    superposition_impedances = ss_impedance_devices;
-
     int n_output;
     std::string s_input;
     std::cout << "Which node is the output node?" << std::endl;
@@ -911,6 +908,8 @@ int main(){
 
             std::complex<double> ACSource(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
             
+            superposition_impedances = ss_impedance_devices;
+
             if(ss_sources[i]->get_type() == "AC V" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
                 superposition_impedances = superposition(i, ss_sources, superposition_impedances);
 
@@ -930,18 +929,22 @@ int main(){
                 matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
             }
             else if(ss_sources[i]->get_type() == "AC V" && ss_sources[i]->give_nodeinfo().x != 0 && ss_sources[i]->give_nodeinfo().y != 0){
-                //redo
                 
                 superposition_impedances = superposition(i, ss_sources, superposition_impedances);
 
                 matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
 
-                if(ss_sources[i]->give_nodeinfo().x != 0){
-                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = negative * ACSource * matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1);
+                
+                for(int j = 0; j < n_max; j++){
+                    matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
                 }
-                else{
-                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
-                }
+
+                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
+                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().y - 1) = negative;
+                matrixA(ss_sources[i]->give_nodeinfo().y - 1,ss_sources[i]->give_nodeinfo().x - 1) = zero;
+                
             }
             else if(ss_sources[i]->get_type() == "AC I" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
                 superposition_impedances = superposition(i, ss_sources, superposition_impedances);
@@ -973,27 +976,6 @@ int main(){
         magnitude.push_back(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0)));
         phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
     }
-
-    //for(int n = 0; f < f_stop; n++){
-        //f = f_start * pow(10, n/n_ppd);
-        //frequencies.push_back(f);
-        //omega = 2 * M_PI * f;
-
-        //matrixA.setZero();
-
-        //matrixA = cons_conductance_matrix(matrixA, ss_impedance_devices, omega);
-
-        //for(int i = 0; i < n_max; i++){
-            //matrixA(ss_sources[0]->give_nodeinfo().x - 1,i) = zero;
-        //}
-
-        //matrixA(ss_sources[0]->give_nodeinfo().x - 1,ss_sources[0]->give_nodeinfo().x - 1) = one;
-
-        //MatrixXcd matrixX = matrixA.fullPivLu().solve(matrixB);
-
-        //magnitude.push_back(return_tf_magnitude(ACSource, matrixX(n_output - 1, 0)));
-        //phase.push_back(return_tf_phase(ACSource, matrixX(n_output - 1, 0)));
-    //}
 
     for(int i = 0; i < magnitude.size(); i++){
         std::cout << magnitude[i] << std::endl;

@@ -689,6 +689,17 @@ std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<
     return impedances;
 }
 
+bool detect_parallel_id(ImpedanceDevice* id, Source* source){
+    if((id->give_nodeinfo().x == source->give_nodeinfo().x) && (id->give_nodeinfo().y == source->give_nodeinfo().y)){
+        return true;
+    }
+    else if((id->give_nodeinfo().x == source->give_nodeinfo().y) && (id->give_nodeinfo().y == source->give_nodeinfo().x)){
+        return true;
+    }
+
+    return false;
+}
+
 using namespace Eigen;
 
 MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> ss_impedances, double omega){
@@ -715,7 +726,7 @@ MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> ss_
 
 int main(){
     std::ifstream infile; 
-    infile.open("testlpf.txt");
+    infile.open("superposition.txt");
  
     if(!infile.is_open()){
         std::cout << "error opening file" << std::endl;
@@ -909,6 +920,7 @@ int main(){
             std::complex<double> ACSource(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
             
             superposition_impedances = ss_impedance_devices;
+            //superposition_impedances = superposition(i, ss_sources, superposition_impedances);
 
             if(ss_sources[i]->get_type() == "AC V" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
                 superposition_impedances = superposition(i, ss_sources, superposition_impedances);
@@ -934,9 +946,30 @@ int main(){
 
                 matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
 
-                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
-                matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = negative * ACSource * matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1);
+                for(int j = 0; j < n_max; j++){
+                    matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) + matrixA(ss_sources[i]->give_nodeinfo().x - 1, j);
+                }
                 
+                for(int j = 0; j < superposition_impedances.size(); j++){
+                    if(detect_parallel_id(superposition_impedances[j], ss_sources[i]) == false){
+                        if((superposition_impedances[j]->give_nodeinfo().x == ss_sources[i]->give_nodeinfo().x) || (superposition_impedances[j]->give_nodeinfo().y == ss_sources[i]->give_nodeinfo().x)){
+                            matrixA(ss_sources[i]->give_nodeinfo().y - 1, ss_sources[i]->give_nodeinfo().y - 1) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, ss_sources[i]->give_nodeinfo().y - 1) + superposition_impedances[j]->get_conductance(omega);
+                        }
+                    }
+                }
+
+                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                //better functional decomposition can be done as the for loops are basically identical
+                for(int j = 0; j < superposition_impedances.size(); j++){
+                    if(detect_parallel_id(superposition_impedances[j], ss_sources[i]) == false){
+                        if((superposition_impedances[j]->give_nodeinfo().x == ss_sources[i]->give_nodeinfo().x) || (superposition_impedances[j]->give_nodeinfo().y == ss_sources[i]->give_nodeinfo().x)){
+                            matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) + superposition_impedances[j]->get_conductance(omega);
+                        }
+                    }
+                }
+
+                matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = negative * ACSource * matrixB(ss_sources[i]->give_nodeinfo().y - 1,0);
+
                 for(int j = 0; j < n_max; j++){
                     matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
                 }
@@ -944,7 +977,9 @@ int main(){
                 matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
                 matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().y - 1) = negative;
                 matrixA(ss_sources[i]->give_nodeinfo().y - 1,ss_sources[i]->give_nodeinfo().x - 1) = zero;
-                
+
+                //std::cout << matrixB << std::endl;
+                //std::cout << std::endl;
             }
             else if(ss_sources[i]->get_type() == "AC I" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
                 superposition_impedances = superposition(i, ss_sources, superposition_impedances);
@@ -969,10 +1004,11 @@ int main(){
                 matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
             }
 
-
             matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
         }
 
+        //std::cout << matrixX << std::endl;
+        //std::cout << std::endl;
         magnitude.push_back(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0)));
         phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
     }

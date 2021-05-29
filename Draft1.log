@@ -1,8 +1,8 @@
 Circuit: * C:\users\crossover\Desktop\My Mac Desktop\SCHOOL WORK\Imperial College London\EEE\Year 1\Project\electronicsdesignproject\Draft1.asc
 
 
-Date: Sun May 23 15:33:18 2021
-Total elapsed time: 0.134 seconds.
+Date: Sat May 29 13:47:11 2021
+Total elapsed time: 0.102 seconds.
 
 tnom = 27
 temp = 27
@@ -12,7 +12,7 @@ traniter = 0
 tranpoints = 0
 accept = 0
 rejected = 0
-matrix size = 4
-fillins = 0
+matrix size = 5
+fillins = 1
 solver = Normal
 

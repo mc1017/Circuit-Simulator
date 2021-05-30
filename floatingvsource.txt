@@ -1,0 +1,28 @@
+else if(ss_sources[i]->get_type() == "AC V" && ss_sources[i]->give_nodeinfo().x != 0 && ss_sources[i]->give_nodeinfo().y != 0){
+                //forms foundation of supernode row by adding the rows of the 2 nodes that form the supernode
+                for(int j = 0; j < n_max; j++){
+                    matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) + matrixA(ss_sources[i]->give_nodeinfo().x - 1, j);
+                }
+                //forms G_ss in A by adding conductances connected to + side of source (that are not parallel to the source, impedances parallel to source are inside supernode, thus don't count)
+                //sets one entry of matrix B to be the sum of the conductances connected to the + side of the source
+                for(int j = 0; j < superposition_impedances.size(); j++){
+                    if(detect_parallel_id(superposition_impedances[j], ss_sources[i]) == false){
+                        if((superposition_impedances[j]->give_nodeinfo().x == ss_sources[i]->give_nodeinfo().x) || (superposition_impedances[j]->give_nodeinfo().y == ss_sources[i]->give_nodeinfo().x)){
+                            matrixA(ss_sources[i]->give_nodeinfo().y - 1, ss_sources[i]->give_nodeinfo().y - 1) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, ss_sources[i]->give_nodeinfo().y - 1) + superposition_impedances[j]->get_conductance(omega);
+                            matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) + superposition_impedances[j]->get_conductance(omega);
+                        }
+                    }
+                }
+                //sets row representing floating source to all zero first
+                for(int j = 0; j < n_max; j++){
+                    matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
+                }
+                //inserts 1 and -1 into row representing voltage source, inserts 0 into row representing the supernode
+                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
+                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().y - 1) = negative;
+                matrixA(ss_sources[i]->give_nodeinfo().y - 1,ss_sources[i]->give_nodeinfo().x - 1) = zero;
+                //sets correct entry of B matrix to represent the source
+                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                multiplies sum of conductance entry in matrix by -1 and the V_src
+                matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = negative * ACSource * matrixB(ss_sources[i]->give_nodeinfo().y - 1,0);
+            }

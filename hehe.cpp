@@ -681,7 +681,7 @@ std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<
 
     for(int i = 0; i < smallsig_sources.size(); i++){
         if(smallsig_sources[i]->get_type() == "AC V" && i != input_source_index){
-            tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, prefix_convertor("1m"));
+            tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, 0.001);
             impedances.push_back(tmp);
         }
     }
@@ -726,7 +726,7 @@ MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> ss_
 
 int main(){
     std::ifstream infile; 
-    infile.open("superposition.txt");
+    infile.open("superposition2.txt");
  
     if(!infile.is_open()){
         std::cout << "error opening file" << std::endl;
@@ -938,55 +938,60 @@ int main(){
 
                 matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
             }
+            //else if(ss_sources[i]->get_type() == "AC V" && ss_sources[i]->give_nodeinfo().x != 0 && ss_sources[i]->give_nodeinfo().y != 0){
+                //forms foundation of supernode row by adding the rows of the 2 nodes that form the supernode
+                //for(int j = 0; j < n_max; j++){
+                    //matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) + matrixA(ss_sources[i]->give_nodeinfo().x - 1, j);
+                //}
+                //forms G_ss in A by adding conductances connected to + side of source (that are not parallel to the source, impedances parallel to source are inside supernode, thus don't count)
+                //sets one entry of matrix B to be the sum of the conductances connected to the + side of the source
+                //for(int j = 0; j < superposition_impedances.size(); j++){
+                    //if(detect_parallel_id(superposition_impedances[j], ss_sources[i]) == false){
+                        //if((superposition_impedances[j]->give_nodeinfo().x == ss_sources[i]->give_nodeinfo().x) || (superposition_impedances[j]->give_nodeinfo().y == ss_sources[i]->give_nodeinfo().x)){
+                            //matrixA(ss_sources[i]->give_nodeinfo().y - 1, ss_sources[i]->give_nodeinfo().y - 1) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, ss_sources[i]->give_nodeinfo().y - 1) + superposition_impedances[j]->get_conductance(omega);
+                            //matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) + superposition_impedances[j]->get_conductance(omega);
+                        //}
+                    //}
+                //}
+                //sets row representing floating source to all zero first
+                //for(int j = 0; j < n_max; j++){
+                    //matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
+                //}
+                //inserts 1 and -1 into row representing voltage source, inserts 0 into row representing the supernode
+                //matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
+                //matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().y - 1) = negative;
+                //matrixA(ss_sources[i]->give_nodeinfo().y - 1,ss_sources[i]->give_nodeinfo().x - 1) = zero;
+                //sets correct entry of B matrix to represent the source
+                //matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                //multiplies sum of conductance entry in matrix by -1 and the V_src
+                //matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = negative * ACSource * matrixB(ss_sources[i]->give_nodeinfo().y - 1,0);
+            //}
             else if(ss_sources[i]->get_type() == "AC V" && ss_sources[i]->give_nodeinfo().x != 0 && ss_sources[i]->give_nodeinfo().y != 0){
-
+                //forms supernode row by adding the rows of the 2 nodes that form the supernode
                 for(int j = 0; j < n_max; j++){
                     matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) + matrixA(ss_sources[i]->give_nodeinfo().x - 1, j);
                 }
-                
-                for(int j = 0; j < superposition_impedances.size(); j++){
-                    if(detect_parallel_id(superposition_impedances[j], ss_sources[i]) == false){
-                        if((superposition_impedances[j]->give_nodeinfo().x == ss_sources[i]->give_nodeinfo().x) || (superposition_impedances[j]->give_nodeinfo().y == ss_sources[i]->give_nodeinfo().x)){
-                            matrixA(ss_sources[i]->give_nodeinfo().y - 1, ss_sources[i]->give_nodeinfo().y - 1) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, ss_sources[i]->give_nodeinfo().y - 1) + superposition_impedances[j]->get_conductance(omega);
-                        }
-                    }
-                }
-
-                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
-                //better functional decomposition can be done as the for loops are basically identical
-                for(int j = 0; j < superposition_impedances.size(); j++){
-                    if(detect_parallel_id(superposition_impedances[j], ss_sources[i]) == false){
-                        if((superposition_impedances[j]->give_nodeinfo().x == ss_sources[i]->give_nodeinfo().x) || (superposition_impedances[j]->give_nodeinfo().y == ss_sources[i]->give_nodeinfo().x)){
-                            matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) + superposition_impedances[j]->get_conductance(omega);
-                        }
-                    }
-                }
-
-                matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = negative * ACSource * matrixB(ss_sources[i]->give_nodeinfo().y - 1,0);
-
+                //sets row representing floating source to all zero first
                 for(int j = 0; j < n_max; j++){
                     matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
                 }
-
+                //inserts 1 and -1 into row representing voltage source
                 matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
                 matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().y - 1) = negative;
-                matrixA(ss_sources[i]->give_nodeinfo().y - 1,ss_sources[i]->give_nodeinfo().x - 1) = zero;
-
-                //std::cout << matrixB << std::endl;
-                //std::cout << std::endl;
+                //sets correct entry of B matrix to represent the source
+                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
             }
             else if(ss_sources[i]->get_type() == "AC I" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
 
                 if(ss_sources[i]->give_nodeinfo().x != 0){
-                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = negative * ACSource;
                 }
                 else{
                     matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
                 }
+
             }
             else{
-                //floating ACISource
-
                 matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = negative * ACSource;
 
                 matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
@@ -995,35 +1000,34 @@ int main(){
             matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
         }
 
-        //std::cout << matrixX << std::endl;
-        //std::cout << std::endl;
         magnitude.push_back(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0)));
         phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
     }
 
-    for(int i = 0; i < magnitude.size(); i++){
-        std::cout << magnitude[i] << std::endl;
-    }
+    //for(int i = 0; i < magnitude.size(); i++){
+        //std::cout << magnitude[i] << std::endl;
+    //}
 
     //for(int i = 0; i < frequencies.size(); i++){
         //std::cout << frequencies[i] << std::endl;
     //}
 
-    for(int i = 1; i <= phase.size(); i++){
+    for(int i = phase.size() - 1; i > 0; i--){
         if((phase[i] - phase[i-1]) > 180){
             
-            if(phase[i] > 0){
-                phase[i] = phase[i] - 360;
+            if(phase[i - 1] > 0){
+                phase[i - 1] = phase[i - 1] - 360;
             }
             else{
-                phase[i] = phase[i] + 360;
+                phase[i - 1] = phase[i - 1] + 360;
             }
+        //ensures phase of tf is continuous so that it can be plotted
         }
     }
 
-    //for(int i = 0; i < phase.size(); i++){
-        //std::cout << phase[i] << std::endl;
-    //}
+    for(int i = 0; i < phase.size(); i++){
+        std::cout << phase[i] << std::endl;
+    }
 
 }
 

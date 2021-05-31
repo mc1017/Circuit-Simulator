@@ -586,7 +586,7 @@ double extract_double(std::string label){
     std::string double_string;
 
     for(int i = 0; i < label.size(); i++){
-        if(std::isdigit(label[i]) || label[i] == '.'){
+        if(std::isdigit(label[i]) || label[i] == '.' || label[i] == '-'){
          double_string.push_back(label[i]);
         }
     }

@@ -6,7 +6,6 @@
 #include <vector>
 #include <math.h>
 #include <complex>
-#include <float.h>
 #include "library/Eigen/Dense"
 
 struct NodePoint{
@@ -682,12 +681,23 @@ std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<
 
     for(int i = 0; i < smallsig_sources.size(); i++){
         if(smallsig_sources[i]->get_type() == "AC V" && i != input_source_index){
-            tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, prefix_convertor("1m"));
+            tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, 0.001);
             impedances.push_back(tmp);
         }
     }
 
     return impedances;
+}
+
+bool detect_parallel_id(ImpedanceDevice* id, Source* source){
+    if((id->give_nodeinfo().x == source->give_nodeinfo().x) && (id->give_nodeinfo().y == source->give_nodeinfo().y)){
+        return true;
+    }
+    else if((id->give_nodeinfo().x == source->give_nodeinfo().y) && (id->give_nodeinfo().y == source->give_nodeinfo().x)){
+        return true;
+    }
+
+    return false;
 }
 
 using namespace Eigen;
@@ -716,7 +726,7 @@ MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> ss_
 
 int main(){
     std::ifstream infile; 
-    infile.open("testlpf.txt");
+    infile.open("superposition2.txt");
  
     if(!infile.is_open()){
         std::cout << "error opening file" << std::endl;
@@ -882,8 +892,6 @@ int main(){
     std::vector<double> phase;
     std::vector<ImpedanceDevice*> superposition_impedances;
 
-    superposition_impedances = ss_impedance_devices;
-
     int n_output;
     std::string s_input;
     std::cout << "Which node is the output node?" << std::endl;
@@ -910,17 +918,20 @@ int main(){
             matrixB.setZero();
 
             std::complex<double> ACSource(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
-            superposition_impedances = ss_impedance_devices;
-            if(ss_sources[i]->get_type() == "AC V" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
-                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
 
-                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+            superposition_impedances = ss_impedance_devices;
+            superposition_impedances = superposition(i, ss_sources, superposition_impedances);
+            matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+
+
+            if(ss_sources[i]->get_type() == "AC V" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
 
                 if(ss_sources[i]->give_nodeinfo().x != 0){
                     matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
                 }
                 else{
-                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = negative * ACSource;
+                    //account for polarity of voltage source
                 }
 
                 for(int j = 0; j < n_max; j++){
@@ -930,42 +941,36 @@ int main(){
                 matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
             }
             else if(ss_sources[i]->get_type() == "AC V" && ss_sources[i]->give_nodeinfo().x != 0 && ss_sources[i]->give_nodeinfo().y != 0){
-                //redo
-                
-                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
-
-                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
-
-                if(ss_sources[i]->give_nodeinfo().x != 0){
-                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                //forms supernode row by adding the rows of the 2 nodes that form the supernode
+                for(int j = 0; j < n_max; j++){
+                    matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) + matrixA(ss_sources[i]->give_nodeinfo().x - 1, j);
                 }
-                else{
-                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+                //sets row representing floating source to all zero first
+                for(int j = 0; j < n_max; j++){
+                    matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
                 }
+                //inserts 1 and -1 into row representing voltage source
+                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
+                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().y - 1) = negative;
+                //sets correct entry of B matrix to represent the source
+                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
             }
             else if(ss_sources[i]->get_type() == "AC I" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
-                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
-
-                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
 
                 if(ss_sources[i]->give_nodeinfo().x != 0){
-                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = negative * ACSource;
+                    //negative due to orientation of current source
                 }
                 else{
                     matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
                 }
+
             }
             else{
-                //floating ACISource
-                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
-
-                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
-
                 matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = negative * ACSource;
 
                 matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
             }
-
 
             matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
         }
@@ -974,38 +979,30 @@ int main(){
         phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
     }
 
-    //for(int n = 0; f < f_stop; n++){
-        //f = f_start * pow(10, n/n_ppd);
-        //frequencies.push_back(f);
-        //omega = 2 * M_PI * f;
-
-        //matrixA.setZero();
-
-        //matrixA = cons_conductance_matrix(matrixA, ss_impedance_devices, omega);
-
-        //for(int i = 0; i < n_max; i++){
-            //matrixA(ss_sources[0]->give_nodeinfo().x - 1,i) = zero;
-        //}
-
-        //matrixA(ss_sources[0]->give_nodeinfo().x - 1,ss_sources[0]->give_nodeinfo().x - 1) = one;
-
-        //MatrixXcd matrixX = matrixA.fullPivLu().solve(matrixB);
-
-        //magnitude.push_back(return_tf_magnitude(ACSource, matrixX(n_output - 1, 0)));
-        //phase.push_back(return_tf_phase(ACSource, matrixX(n_output - 1, 0)));
+    //for(int i = 0; i < magnitude.size(); i++){
+        //std::cout << magnitude[i] << std::endl;
     //}
-
-    for(int i = 0; i < magnitude.size(); i++){
-        std::cout << magnitude[i] << std::endl;
-    }
 
     //for(int i = 0; i < frequencies.size(); i++){
         //std::cout << frequencies[i] << std::endl;
     //}
 
-    //for(int i = 0; i < phase.size(); i++){
-        //std::cout << phase[i] << std::endl;
-    //}
+    for(int i = phase.size() - 1; i > 0; i--){
+        if((phase[i] - phase[i-1]) > 180){
+            
+            if(phase[i - 1] > 0){
+                phase[i - 1] = phase[i - 1] - 360;
+            }
+            else{
+                phase[i - 1] = phase[i - 1] + 360;
+            }
+        //ensures phase of tf is continuous so that it can be plotted
+        }
+    }
+
+    for(int i = 0; i < phase.size(); i++){
+        std::cout << phase[i] << std::endl;
+    }
 
 }
 

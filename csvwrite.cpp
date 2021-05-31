@@ -50,7 +50,7 @@ int main() {
 
     // Wrap into a vector
     std::vector<std::pair<std::string, std::vector<float>>> vals = {{"Frequency", vec1}, {"Gain", vec3}};
-
+    
     // Write the vector to CSV
     write_csv("transf2", vals);
 

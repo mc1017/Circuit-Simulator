@@ -1,657 +1,1028 @@
-#include <iostream>
-#include <fstream>
-#include <cstdlib>
 #include <string>
-#include <sstream>
+#include <fstream>
 #include <vector>
+#include <utility> // std::pair
+#include <iostream>
+
+#include <cstdlib>
+
+#include <sstream>
+
 #include <math.h>
 #include <complex>
+#include "library/Eigen/Dense"
+
 
 struct NodePoint{
-  int x;
-  int y;
+    int x;
+    int y;
 };
 
 struct NodeTri{
-  int x;
-  int y;
-  int z;
+    int x;
+    int y;
+    int z;
 };
 
 class ImpedanceDevice{
 public:
-  virtual std::complex<double> get_impedance(double omega) const = 0;
+    virtual std::string show_nodeinfo() const = 0;
 
-  virtual std::string show_nodeinfo() const = 0;
+    virtual std::complex<double> get_impedance(double omega) const = 0;
 
-  virtual NodePoint give_nodeinfo() const = 0;
+    virtual std::complex<double> get_conductance(double omega) const = 0;
 
-  virtual ~ImpedanceDevice() { }
+    virtual NodePoint give_nodeinfo() const = 0;
+
+    virtual ~ImpedanceDevice() { }
 };
 
 class Resistor : public ImpedanceDevice{
-
 public:
 
-  Resistor(int n1, int n2, double r) : node1(n1), node2(n2), resistance(r) { }
+    Resistor(int n1, int n2, double r) : node1(n1), node2(n2), resistance(r) { }
 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node1) + ", " + std::to_string(node2) + ")";
-  }
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node1) + ", " + std::to_string(node2) + ")";
+    }
 
-  std::complex<double> get_impedance(double omega) const {
-    std::complex<double> impedance(resistance);
+    std::complex<double> get_impedance(double omega) const {
+        std::complex<double> impedance(resistance);
 
-    return impedance;
-  }
+        return impedance;
+    }
 
-  NodePoint give_nodeinfo() const {
-    NodePoint N;
+    std::complex<double> get_conductance(double omega) const {
+        std::complex<double> conductance(1/resistance);
 
-    N.x = node1;
-    N.y = node2;
+        return conductance;
+    }
 
-    return N;
-  }
+    NodePoint give_nodeinfo() const {
+        NodePoint N;
+
+        N.x = node1;
+        N.y = node2;
+
+        return N;
+    }
 
 private:
-  int node1;
-  int node2;
-  double resistance;
+    int node1;
+    int node2;
+    double resistance;
 };
 
 class Capacitor : public ImpedanceDevice{
 public:
 
-  Capacitor(int n1, int n2, double c) : node1(n1), node2(n2), capacitance(c) { }
+    Capacitor(int n1, int n2, double c) : node1(n1), node2(n2), capacitance(c) { }
 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node1) + ", " + std::to_string(node2) + ")";
-  }
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node1) + ", " + std::to_string(node2) + ")";
+    }
 
-  std::complex<double>get_impedance(double omega) const {
-    std::complex<double> impedance(0, - 1/(omega * capacitance));
+    std::complex<double>get_impedance(double omega) const {
+        std::complex<double> impedance(0, - 1/(omega * capacitance));
 
-    return impedance;
-  }
+        return impedance;
+    }
 
-  NodePoint give_nodeinfo() const {
-    NodePoint N;
+    std::complex<double> get_conductance(double omega) const {
+        std::complex<double> conductance(0, omega * capacitance);
 
-    N.x = node1;
-    N.y = node2;
+        return conductance;
+    }
 
-    return N;
-  }
- 
+    NodePoint give_nodeinfo() const {
+        NodePoint N;
+
+        N.x = node1;
+        N.y = node2;
+
+        return N;
+    }
+
 private :
-  int node1;
-  int node2;
-  double capacitance;
- 
+    int node1;
+    int node2;
+    double capacitance;
 };
 
 class Inductor : public ImpedanceDevice{
 public:
-  Inductor(int n1, int n2, double l) : node1(n1), node2(n2), inductance(l) { }
 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node1) + ", " + std::to_string(node2) + ")";
-  }
+    Inductor(int n1, int n2, double l) : node1(n1), node2(n2), inductance(l) { }
 
-  std::complex<double>get_impedance(double omega) const {
-    std::complex<double> impedance(0, (omega * inductance));
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node1) + ", " + std::to_string(node2) + ")";
+    }
 
-    return impedance;
-  }
+    std::complex<double>get_impedance(double omega) const {
+        std::complex<double> impedance(0, (omega * inductance));
 
-  NodePoint give_nodeinfo() const {
-    NodePoint N;
+        return impedance;
+    }
 
-    N.x = node1;
-    N.y = node2;
+    std::complex<double> get_conductance(double omega) const {
+        std::complex<double> conductance(0, -1/(omega * inductance));
 
-    return N;
-  }
+        return conductance;
+    }
+
+    NodePoint give_nodeinfo() const {
+        NodePoint N;
+
+        N.x = node1;
+        N.y = node2;
+
+        return N;
+    }
 
 private:
-  int node1;
-  int node2;
-  double inductance;
+    int node1;
+    int node2;
+    double inductance;
 };
 
 class Source{
 public:
-  virtual std::string show_nodeinfo() const = 0;
+    virtual std::string show_nodeinfo() const = 0;
 
-  virtual double get_magnitude() const = 0;
+    virtual double get_magnitude() const = 0;
 
-  virtual double get_phase() const = 0;
+    virtual double get_phase() const = 0;
 
-  virtual double get_gm() const = 0;
+    virtual double get_gm() const = 0;
 
-  virtual std::string get_type() const = 0;
+    virtual std::string get_type() const = 0;
 
-  virtual NodePoint give_nodeinfo() const = 0;
+    virtual std::string get_source_label() const = 0;
 
-  virtual NodePoint give_controlinfo() const = 0;
+    virtual NodePoint give_nodeinfo() const = 0;
 
-  virtual ~Source() { }
+    virtual NodePoint give_controlinfo() const = 0;
+
+    virtual ~Source() { }
 };
 
 class DCVSource : public Source{
 public:
-  DCVSource(int n_p, int n_m, double v) : node_plus(n_p), node_minus(n_m), voltage(v) { }
 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
-  }
+    DCVSource(int n_p, int n_m, double v, std::string label) : node_plus(n_p), node_minus(n_m), voltage(v), source_label(label){ }
 
-  double get_magnitude() const {
-    return voltage;
-  }
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
+    }
 
-  double get_phase() const { 
-    return 0;
-  }
+    double get_magnitude() const {
+        return voltage;
+    }
 
-  double get_gm() const {
-    return 0;
-  }
+    double get_phase() const {
+        return 0;
+    }
 
-  std::string get_type() const {
-    return "DC V";
-  }
+    double get_gm() const {
+        return 0;
+    }
 
-  NodePoint give_nodeinfo() const {
-    NodePoint N;
+    std::string get_type() const {
+        return "DC V";
+    }
 
-    N.x = node_plus;
-    N.y = node_minus;
+    std::string get_source_label() const {
+        return source_label;
+    }
 
-    return N;
-  }
+    NodePoint give_nodeinfo() const {
+        NodePoint N;
 
-  NodePoint give_controlinfo() const {
-    NodePoint C;
+        N.x = node_plus;
+        N.y = node_minus;
 
-    C.x = 0;
-    C.y = 0;
+        return N;
+    }
 
-    return C;
-  }
+    NodePoint give_controlinfo() const {
+        NodePoint C;
+
+        C.x = 0;
+        C.y = 0;
+
+        return C;
+    }
 
 private:
-  int node_plus;
-  int node_minus;
-  double voltage;
+    int node_plus;
+    int node_minus;
+    double voltage;
+    std::string source_label;
 };
 
 class DCISource : public Source{
 public:
-  DCISource(int n_in, int n_out, double i) : node_in(n_in), node_out(n_out), current(i){ }
 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_in) + ", " + std::to_string(node_out) + ")";
-  }
+    DCISource(int n_in, int n_out, double i, std::string label) : node_in(n_in), node_out(n_out), current(i), source_label(label){ }
 
-  double get_magnitude() const {
-    return current;
-  }
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node_in) + ", " + std::to_string(node_out) + ")";
+    }
 
-  double get_phase() const { 
-    return 0;
-  }
+    double get_magnitude() const {
+        return current;
+    }
 
-  double get_gm() const {
-    return 0;
-  }
+    double get_phase() const {
+        return 0;
+    }
 
-  std::string get_type() const {
-    return "DC I";
-  }
+    double get_gm() const {
+        return 0;
+    }
 
-  NodePoint give_nodeinfo() const {
-    NodePoint N;
+    std::string get_type() const {
+        return "DC I";
+    }
 
-    N.x = node_in;
-    N.y = node_out;
+    std::string get_source_label() const {
+        return source_label;
+    }
 
-    return N;
-  }
+    NodePoint give_nodeinfo() const {
+        NodePoint N;
 
-  NodePoint give_controlinfo() const {
-    NodePoint C;
+        N.x = node_in;
+        N.y = node_out;
 
-    C.x = 0;
-    C.y = 0;
+        return N;
+    }
 
-    return C;
-  }
+    NodePoint give_controlinfo() const {
+        NodePoint C;
+
+        C.x = 0;
+        C.y = 0;
+
+        return C;
+    }
 
 private:
-  int node_in;
-  int node_out;
-  double current;
+    int node_in;
+    int node_out;
+    double current;
+    std::string source_label;
 };
 
 class ACVSource : public Source{
 public:
-  ACVSource(int n_p, int n_m, double v_m, double v_p) : node_plus(n_p), node_minus(n_m), amplitude(v_m), phase(v_p){ }
 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
-  }
+    ACVSource(int n_p, int n_m, double v_m, double v_p, std::string label) : node_plus(n_p), node_minus(n_m), amplitude(v_m), phase(v_p), source_label(label){ }
 
-  double get_magnitude() const {
-    return amplitude;
-  }
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
+    }
 
-  double get_phase() const {
-    return phase;
-  }
+    double get_magnitude() const {
+        return amplitude;
+    }
 
-  double get_gm() const {
-    return 0;
-  }
+    double get_phase() const {
+        return phase;
+    }
 
-  std::string get_type() const {
-    return "AC V";
-  }
+    double get_gm() const {
+        return 0;
+    }
 
-  NodePoint give_nodeinfo() const {
-    NodePoint N;
+    std::string get_type() const {
+        return "AC V";
+    }
 
-    N.x = node_plus;
-    N.y = node_minus;
+    std::string get_source_label() const {
+        return source_label;
+    }
 
-    return N;
-  }
+    NodePoint give_nodeinfo() const {
+        NodePoint N;
 
-  NodePoint give_controlinfo() const {
-    NodePoint C;
+        N.x = node_plus;
+        N.y = node_minus;
 
-    C.x = 0;
-    C.y = 0;
+        return N;
+    }
 
-    return C;
-  }
+    NodePoint give_controlinfo() const {
+        NodePoint C;
+
+        C.x = 0;
+        C.y = 0;
+
+        return C;
+    }
 
 private:
-  int node_plus;
-  int node_minus;
-  double amplitude;
-  double phase;
+    int node_plus;
+    int node_minus;
+    double amplitude;
+    double phase;
+    std::string source_label;
 };
 
 class ACISource : public Source{
 public:
-  ACISource(int n_in, int n_out, double i_m, double i_p) : node_in(n_in), node_out(n_out), amplitude(i_m), phase(i_p){ }
 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_in) + ", " + std::to_string(node_out) + ")";
-  }
+    ACISource(int n_in, int n_out, double i_m, double i_p, std::string label) : node_in(n_in), node_out(n_out), amplitude(i_m), phase(i_p), source_label(label){ }
 
-  double get_magnitude() const {
-    return amplitude;
-  }
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node_in) + ", " + std::to_string(node_out) + ")";
+    }
 
-  double get_phase() const {
-    return phase;
-  }
+    double get_magnitude() const {
+        return amplitude;
+    }
 
-  double get_gm() const {
-    return 0;
-  }
+    double get_phase() const {
+        return phase;
+    }
 
-  std::string get_type() const {
-    return "AC I";
-  }
+    double get_gm() const {
+        return 0;
+    }
 
-  NodePoint give_nodeinfo() const {
-    NodePoint N;
+    std::string get_type() const {
+        return "AC I";
+    }
 
-    N.x = node_in;
-    N.y = node_out;
+    std::string get_source_label() const {
+        return source_label;
+    }
 
-    return N;
-  }
+    NodePoint give_nodeinfo() const {
+        NodePoint N;
 
-  NodePoint give_controlinfo() const {
-    NodePoint C;
+        N.x = node_in;
+        N.y = node_out;
 
-    C.x = 0;
-    C.y = 0;
+        return N;
+    }
 
-    return C;
-  }
+    NodePoint give_controlinfo() const {
+        NodePoint C;
+
+        C.x = 0;
+        C.y = 0;
+
+        return C;
+    }
 
 private:
-  int node_in;
-  int node_out;
-  double amplitude;
-  double phase;
+    int node_in;
+    int node_out;
+    double amplitude;
+    double phase;
+    std::string source_label;
 };
 
 class VCCSource : public Source{
 public:
-  VCCSource(int n_p, int n_m, int c_p, int c_m, double g_m) : node_plus(n_p), node_minus(n_m), control_plus(c_p), control_minus(c_m), transconductance(g_m){ }
 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
-  }
+    VCCSource(int n_p, int n_m, int c_p, int c_m, double g_m, std::string label) : node_plus(n_p), node_minus(n_m), control_plus(c_p), control_minus(c_m), transconductance(g_m), source_label(label){ }
 
-  double get_magnitude() const {
-    return 0;
-  }
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
+    }
 
-  double get_phase() const {
-    return 0;
-  }
+    double get_magnitude() const {
+        return 0;
+    }
 
-  double get_gm() const {
-    return transconductance;
-  }
+    double get_phase() const {
+        return 0;
+    }
 
-  std::string get_type() const {
-    return "VCCS";
-  }
+    double get_gm() const {
+        return transconductance;
+    }
 
-  NodePoint give_nodeinfo() const {
-    NodePoint N;
+    std::string get_type() const {
+        return "VCCS";
+    }
 
-    N.x = node_plus;
-    N.y = node_minus;
+    std::string get_source_label() const {
+        return source_label;
+    }
 
-    return N;
-  }
+    NodePoint give_nodeinfo() const {
+        NodePoint N;
 
-  NodePoint give_controlinfo() const {
-    NodePoint C;
+        N.x = node_plus;
+        N.y = node_minus;
 
-    C.x = control_plus;
-    C.y = control_minus;
+        return N;
+    }
 
-    return C;
-  }
+    NodePoint give_controlinfo() const {
+        NodePoint C;
 
-private:
-  int node_plus;
-  int node_minus;
-  int control_plus;
-  int control_minus;
-  double transconductance;
-};
+        C.x = control_plus;
+        C.y = control_minus;
 
-class non_linear_devices{
-  virtual std::string show_nodeinfo() const = 0;
-
-  virtual NodePoint give_binodeinfo() const = 0;
-
-  virtual NodeTri give_trinodeinfo() const =0;
-
-  virtual std::string get_model() const =0;
-};
-
-
-class Diode: public non_linear_devices{
-public: 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_an) + ", " + std::to_string(node_cat) +")";
-  }
-  std::string get_model(){
-    return "Model: " + model;
-  }
-
-  NodePoint give_binodeinfo() const {
-    NodePoint N;
-
-    N.x = node_an;
-    N.y = node_cat;
-
-    return N;
-  }
+        return C;
+    }
 
 private:
-  int node_an;
-  int node_cat;
-  std::string model;
+    int node_plus;
+    int node_minus;
+    int control_plus;
+    int control_minus;
+    double transconductance;
+    std::string source_label;
 };
 
-class BJT: public non_linear_devices{
-public: 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_c) + ", " + std::to_string(node_b) + ", " + std::to_string(node_e) +")";
-  }
+class NonLinearDevice{
+public:
+    virtual std::string show_nodeinfo() const = 0;
 
-  NodeTri give_trinodeinfo() const {
-    NodeTri N;
+    virtual NodePoint give_binodeinfo() const = 0;
 
-    N.x = node_c;
-    N.y = node_b;
-    N.z = node_e;
+    virtual NodeTri give_trinodeinfo() const = 0;
 
-    return N;
-  }
+    virtual std::string get_model() const = 0;
 
-  std::string get_model() const {
-    return "Model: " + model;
-  }
-
-
-private:
-  int node_c;
-  int node_b;
-  int node_e;
-  std::string model;
-
+    virtual ~NonLinearDevice() { }
 };
 
+class Diode: public NonLinearDevice{
+public:
 
-class MOSFET: public non_linear_devices{
-public: 
-  std::string show_nodeinfo() const {
-    return "Nodal Coordinates: (" + std::to_string(node_d) + ", " + std::to_string(node_g) + ", "  + std::to_string(node_s) + ")";
-  }
+    Diode(int n_a, int n_c, std::string mod) : node_an(n_a), node_cat(n_c), model(mod){ }
 
-  NodeTri give_trinodeinfo() const {
-    NodeTri N;
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node_an) + ", " + std::to_string(node_cat) +")";
+    }
 
-    N.x = node_d;
-    N.y = node_g;
-    N.z = node_s;
+    NodePoint give_binodeinfo() const {
+        NodePoint N;
 
-    return N;
-  }
+        N.x = node_an;
+        N.y = node_cat;
 
-  std::string get_type() const {
-    return "Model: " + model;
-  }
+        return N;
+    }
 
+    NodeTri give_trinodeinfo() const {
+        NodeTri N;
+
+        N.x = 0;
+        N.y = 0;
+        N.z = 0;
+
+        return N;
+    }
+
+    std::string get_model() const {
+        return model;
+    }
 
 private:
-  int node_d;
-  int node_g;
-  int node_s;
-  std::string model;
+    int node_an;
+    int node_cat;
+    std::string model;
+};
 
+class BJT: public NonLinearDevice{
+public:
+
+    BJT(int n_c, int n_b, int n_e, std::string mod) : node_c(n_c), node_b(n_b), node_e(n_e), model(mod) { }
+
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node_c) + ", " + std::to_string(node_b) + ", " + std::to_string(node_e) +")";
+    }
+
+    NodePoint give_binodeinfo() const {
+        NodePoint N;
+
+        N.x = 0;
+        N.y = 0;
+
+        return N;
+    }
+
+    NodeTri give_trinodeinfo() const {
+        NodeTri N;
+
+        N.x = node_c;
+        N.y = node_b;
+        N.z = node_e;
+
+        return N;
+    }
+
+    std::string get_model() const {
+        return model;
+    }
+
+private:
+    int node_c;
+    int node_b;
+    int node_e;
+    std::string model;
+};
+
+class MOSFET: public NonLinearDevice{
+public:
+
+    MOSFET(int n_d, int n_g, int n_s, std::string mod) : node_d(n_d), node_g(n_g), node_s(n_s), model(mod) { }
+
+    std::string show_nodeinfo() const {
+        return "Nodal Coordinates: (" + std::to_string(node_d) + ", " + std::to_string(node_g) + ", "  + std::to_string(node_s) + ")";
+    }
+
+    NodePoint give_binodeinfo() const {
+        NodePoint N;
+
+        N.x = 0;
+        N.y = 0;
+
+        return N;
+    }
+
+    NodeTri give_trinodeinfo() const {
+        NodeTri N;
+
+        N.x = node_d;
+        N.y = node_g;
+        N.z = node_s;
+
+        return N;
+    }
+
+    std::string get_model() const {
+        return model;
+    }
+
+private:
+    int node_d;
+    int node_g;
+    int node_s;
+    std::string model;
 };
 
 int node_to_number(std::string node){
-  std::string node_label;
-  int node_number;
+    std::string node_label;
+    int node_number;
 
-  if(node != "0"){
+    if(node != "0"){
 
-    for(int i = 1; i < node.size(); i++){
-      node_label.push_back(node[i]);
+        for(int i = 1; i < node.size(); i++){
+            node_label.push_back(node[i]);
+        }
+
+        node_number = std::stoi(node_label);
+
+        return node_number;
     }
 
-    node_number = std::stoi(node_label);
-
-    return node_number;
-  }
-
-  return 0;
+    return 0;
 }
 
 double extract_double(std::string label){
-  std::string double_string;
+    std::string double_string;
 
-  for(int i = 0; i < label.size(); i++){
-    if(std::isdigit(label[i]) || label[i] == '.'){
-      double_string.push_back(label[i]);
+    for(int i = 0; i < label.size(); i++){
+        if(std::isdigit(label[i]) || label[i] == '.'){
+         double_string.push_back(label[i]);
+        }
     }
-  }
 
-  return std::stod(double_string);
+    return std::stod(double_string);
 }
 
 double prefix_convertor(std::string value){
-  std::string prefix;
-  double num_quantity;
+    std::string prefix;
+    double num_quantity;
 
-  for(int i = 0; i < value.size(); i++){
-    if(std::isdigit(value[i]) == false && value[i] != '.'){
-      prefix.push_back(value[i]);
+    for(int i = 0; i < value.size(); i++){
+        if(std::isdigit(value[i]) == false && value[i] != '.'){
+        prefix.push_back(value[i]);
+        }
     }
-  }
 
-  num_quantity = extract_double(value);
+    num_quantity = extract_double(value);
 
-  if(prefix == "p"){
-    num_quantity = num_quantity * pow(10, -12);
-  }
-  else if(prefix == "n"){
-    num_quantity = num_quantity * pow(10, -9);
-  }
-  else if(prefix == "\u00B5"){
-    num_quantity = num_quantity * pow(10, -6);
-  }
-  else if(prefix == "m"){
-    num_quantity = num_quantity * pow(10, -3);
-  }
-  else if(prefix == "k"){
-    num_quantity = num_quantity * pow(10, 3);
-  }
-  else if(prefix == "Meg"){
-    num_quantity = num_quantity * pow(10, 6);
-  }
-  else if(prefix == "G"){
-    num_quantity = num_quantity * pow(10, 9);
-  }
-  else{
+    if(prefix == "p"){
+        num_quantity = num_quantity * pow(10, -12);
+    }
+    else if(prefix == "n"){
+        num_quantity = num_quantity * pow(10, -9);
+    }
+    else if(prefix == "\u00B5"){
+        num_quantity = num_quantity * pow(10, -6);
+    }
+    else if(prefix == "m"){
+        num_quantity = num_quantity * pow(10, -3);
+    }
+    else if(prefix == "k"){
+        num_quantity = num_quantity * pow(10, 3);
+    }
+    else if(prefix == "Meg"){
+        num_quantity = num_quantity * pow(10, 6);
+    }
+    else if(prefix == "G"){
+        num_quantity = num_quantity * pow(10, 9);
+    }
+    else{
+        return num_quantity;
+    }
+
     return num_quantity;
-  }
-
-  return num_quantity;
 }
 
 double get_AC_magnitude(std::string ac_param){
-  std::string magnitude;
+    std::string magnitude;
 
-  magnitude = std::to_string(extract_double(ac_param)) + ac_param[ac_param.size()-1];
+    magnitude = std::to_string(extract_double(ac_param)) + ac_param[ac_param.size()-1];
 
-  return prefix_convertor(magnitude);
+    return prefix_convertor(magnitude);
 }
+
+int max_node_number(int node_max, int node1, int node2, int node3, int node4){
+
+    if((node1 > node_max) && (node1 >= node2) && (node1 >= node3) && (node1 >= node4)){
+        return node1;
+    }
+    else if((node2 > node_max) && (node2 >= node1) && (node2 >= node3) && (node2 >= node4)){
+        return node2;
+    }
+    else if((node3 > node_max) && (node3 >= node1) && (node3 >= node2) && (node3 >= node4)){
+        return node3;
+    }
+    else if((node4 > node_max) && (node4 >= node1) && (node4 >= node2) && (node4 >= node3)){
+        return node4;
+    }
+
+    return node_max;
+}
+
+double return_tf_magnitude(std::complex<double> source, std::complex<double> output_node){
+    double gain;
+
+    gain = std::abs(output_node/source);
+
+    return gain;
+}
+
+double return_tf_phase(std::complex<double> source, std::complex<double> output_node){
+    double phase_change;
+
+    phase_change = (std::arg(output_node) - std::arg(source)) * 180 / M_PI;
+
+    return phase_change;
+}
+
+std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<Source*> smallsig_sources, std::vector<ImpedanceDevice*> impedances){
+    ImpedanceDevice* tmp;
+
+    for(int i = 0; i < smallsig_sources.size(); i++){
+        if(smallsig_sources[i]->get_type() == "AC V" && i != input_source_index){
+            tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, prefix_convertor("1m"));
+            impedances.push_back(tmp);
+        }
+    }
+
+    return impedances;
+}
+
+using namespace Eigen;
+
+MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> ss_impedances, double omega){
+
+    for(int i = 0; i < ss_impedances.size(); i++){
+
+            if(ss_impedances[i]->give_nodeinfo().x != 0 && ss_impedances[i]->give_nodeinfo().y != 0){
+                A(ss_impedances[i]->give_nodeinfo().x - 1, ss_impedances[i]->give_nodeinfo().y - 1) = A(ss_impedances[i]->give_nodeinfo().x - 1, ss_impedances[i]->give_nodeinfo().y - 1) - ss_impedances[i]->get_conductance(omega);
+                A(ss_impedances[i]->give_nodeinfo().y - 1, ss_impedances[i]->give_nodeinfo().x - 1) = A(ss_impedances[i]->give_nodeinfo().y - 1, ss_impedances[i]->give_nodeinfo().x - 1) - ss_impedances[i]->get_conductance(omega);
+                A(ss_impedances[i]->give_nodeinfo().x - 1, ss_impedances[i]->give_nodeinfo().x - 1) = A(ss_impedances[i]->give_nodeinfo().x - 1, ss_impedances[i]->give_nodeinfo().x - 1) + ss_impedances[i]->get_conductance(omega);
+                A(ss_impedances[i]->give_nodeinfo().y - 1, ss_impedances[i]->give_nodeinfo().y - 1) = A(ss_impedances[i]->give_nodeinfo().y - 1, ss_impedances[i]->give_nodeinfo().y - 1) + ss_impedances[i]->get_conductance(omega);
+            }
+            else if(ss_impedances[i]->give_nodeinfo().x == 0 && ss_impedances[i]->give_nodeinfo().y != 0){
+                A(ss_impedances[i]->give_nodeinfo().y - 1, ss_impedances[i]->give_nodeinfo().y - 1) = A(ss_impedances[i]->give_nodeinfo().y - 1, ss_impedances[i]->give_nodeinfo().y - 1) + ss_impedances[i]->get_conductance(omega);
+            }
+            else if(ss_impedances[i]->give_nodeinfo().x != 0 && ss_impedances[i]->give_nodeinfo().y == 0){
+                A(ss_impedances[i]->give_nodeinfo().x - 1, ss_impedances[i]->give_nodeinfo().x - 1) = A(ss_impedances[i]->give_nodeinfo().x - 1, ss_impedances[i]->give_nodeinfo().x - 1) + ss_impedances[i]->get_conductance(omega);
+            }
+
+    }
+
+    return A;
+}
+void write_csv(std::string filename, std::vector<std::pair<std::string, std::vector<double> > > transfer_func){
+    // we meed both a string and an integer for parameters.
+    std::ofstream myFile(filename);
+
+    // Send column names to the stream
+    for(int j = 0; j < transfer_func.size(); j++)
+    {
+        myFile << transfer_func.at(j).first;// the string is for the columns
+        if(j != transfer_func.size() - 1) myFile << '\t'; // No comma at end of line
+    }
+    myFile << "\n";
+
+    // Send data to the stream
+    for(int i = 0; i < transfer_func.at(0).second.size(); ++i)
+    {
+        for(int j = 0; j < transfer_func.size(); j++)
+        {
+            myFile << transfer_func.at(j).second.at(i);
+            if(j != transfer_func.size() - 1) myFile << '\t'; // No comma at end of line
+        }
+        myFile << "\n";
+    }
+    // Close the file
+    myFile.close();
+}
+
 
 int main(){
-  std::ifstream infile; 
-  infile.open("testlist.txt");
- 
-  if(!infile.is_open()){
-    std::cout << "error opening file" << std::endl;
-    return EXIT_FAILURE;
-  }
- 
-  std::string component;
-  std::vector<std::string> substrs;
-  std::vector<ImpedanceDevice*> impedance_devices, ss_impedance_devices; 
-  ImpedanceDevice* tmp_id;
-  std::vector<Source*> sources, ss_sources; 
-  Source* tmp_s;
-  // frequency step parameters, we assume ac analysis always done in decades
-  double f_start, f_stop, n_ppd;
- 
-  while(std::getline(infile, component)){
-    std::stringstream line(component);
+    std::ifstream infile;
+    infile.open("testlpf.txt");
 
-    while(line.good()){
-      std::string substr;
-      std::getline(line, substr, ' ');
-
-      substrs.push_back(substr);
+    if(!infile.is_open()){
+        std::cout << "error opening file" << std::endl;
+        return EXIT_FAILURE;
     }
 
-    if(substrs[0][0] == 'R'){
-      tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
-            
-      impedance_devices.push_back(tmp_id);
-    }
-    else if(substrs[0][0] == 'C'){
-      tmp_id = new Capacitor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
+    std::string component;
+    std::vector<std::string> substrs;
 
-      impedance_devices.push_back(tmp_id);
-    }
-    else if(substrs[0][0] == 'L'){
-      tmp_id = new Inductor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
+    std::vector<ImpedanceDevice*> impedance_devices, ss_impedance_devices;
+    ImpedanceDevice* tmp_id;
+    ImpedanceDevice* tmp_id2;
 
-      impedance_devices.push_back(tmp_id);
-    }
-    else if(substrs[0][0] == 'V' && substrs[3][0] != 'A'){
-      tmp_s = new DCVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
+    std::vector<Source*> sources, ss_sources;
+    Source* tmp_s;
 
-      sources.push_back(tmp_s);
-    }
-    else if(substrs[0][0] == 'V' && substrs[3][0] == 'A'){
-      tmp_s = new ACVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]));
+    std::vector<NonLinearDevice*> non_linear_devices;
+    NonLinearDevice* tmp_nld;
+    // frequency step parameters, we assume ac analysis always done in decades
+    double f_start, f_stop, n_ppd, f, omega;
+    int n_max = 0;
 
-      sources.push_back(tmp_s);
-      ss_sources.push_back(tmp_s);
-    }
-    else if(substrs[0][0] == 'I' && substrs[3][0] != 'A'){
-      tmp_s = new DCISource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
+    while(std::getline(infile, component)){
+        std::stringstream line(component);
 
-      sources.push_back(tmp_s);
-    }
-    else if(substrs[0][0] == 'I' && substrs[3][0] == 'A'){
-      tmp_s = new ACISource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]));
+        while(line.good()){
+            std::string substr;
+            std::getline(line, substr, ' ');
 
-      sources.push_back(tmp_s);
-      ss_sources.push_back(tmp_s);
-    }
-    else if(substrs[0] == ".ac"){
-      n_ppd = prefix_convertor(substrs[2]);
-      f_start = prefix_convertor(substrs[3]);
-      f_stop = prefix_convertor(substrs[4]);
-    }
-    else if(substrs[0] == ".end"){
-      infile.close();
-    }      
+            substrs.push_back(substr);
+        }
 
-    substrs.clear();
-  }
+        if(substrs[0][0] == 'R'){
+            tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
 
-  infile.close();
+            impedance_devices.push_back(tmp_id);
+            ss_impedance_devices.push_back(tmp_id);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+        }
+        else if(substrs[0][0] == 'C'){
+            tmp_id = new Capacitor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
+
+            impedance_devices.push_back(tmp_id);
+            ss_impedance_devices.push_back(tmp_id);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+        }
+        else if(substrs[0][0] == 'L'){
+            tmp_id = new Inductor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
+
+            impedance_devices.push_back(tmp_id);
+            ss_impedance_devices.push_back(tmp_id);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+        }
+        else if(substrs[0][0] == 'V' && substrs[3][0] != 'A'){
+            tmp_s = new DCVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), substrs[0]);
+            tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor("1m"));
+            //ss equivalent of DC Voltage Source is short circuit, represented by resistor of least possible value in C++
+            sources.push_back(tmp_s);
+            ss_impedance_devices.push_back(tmp_id);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+        }
+        else if(substrs[0][0] == 'V' && substrs[3][0] == 'A'){
+            tmp_s = new ACVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]), substrs[0]);
+
+            sources.push_back(tmp_s);
+            ss_sources.push_back(tmp_s);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+        }
+        else if(substrs[0][0] == 'I' && substrs[3][0] != 'A'){
+            tmp_s = new DCISource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), substrs[0]);
+
+            sources.push_back(tmp_s);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+        }
+        else if(substrs[0][0] == 'I' && substrs[3][0] == 'A'){
+            tmp_s = new ACISource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]), substrs[0]);
+
+            sources.push_back(tmp_s);
+            ss_sources.push_back(tmp_s);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+        }
+        else if(substrs[0][0] == 'G'){
+            tmp_s = new VCCSource(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), node_to_number(substrs[4]), prefix_convertor(substrs[5]), substrs[0]);
+
+            sources.push_back(tmp_s);
+            //what is ss equavalent of VCCS?
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), node_to_number(substrs[4]));
+        }
+        else if(substrs[0][0] == 'D'){
+            tmp_nld = new Diode(node_to_number(substrs[1]), node_to_number(substrs[2]), substrs[3]);
+
+            non_linear_devices.push_back(tmp_nld);
+            //include ss equivalent for diode
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+        }
+        else if(substrs[0][0] == 'Q'){
+            tmp_nld = new BJT(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), substrs[4]);
+
+            non_linear_devices.push_back(tmp_nld);
+            //include ss equivalent for BJT
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), 0);
+        }
+        else if(substrs[0][0] == 'M'){
+            tmp_nld = new MOSFET(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), substrs[4]);
+
+            non_linear_devices.push_back(tmp_nld);
+            //include ss equivalent for MOSFET
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), 0);
+        }
+        else if(substrs[0] == ".ac"){
+            n_ppd = prefix_convertor(substrs[2]);
+            f_start = prefix_convertor(substrs[3]);
+            f_stop = prefix_convertor(substrs[4]);
+        }
+        else if(substrs[0] == ".end"){
+            infile.close();
+        }
+
+        substrs.clear();
+    }
+
+    infile.close();
+
+
+    MatrixXcd matrixA(n_max,n_max), matrixB(n_max, 1), matrixX(n_max, 1);
+
+    std::complex<double> zero(0,0), one(1,0), negative(-1,0), InputSource(0,0);
+
+    std::vector<double> frequencies;
+    std::vector<double> magnitude;
+    std::vector<double> phase;
+    std::vector<ImpedanceDevice*> superposition_impedances;
+
+    superposition_impedances = ss_impedance_devices;
+
+    int n_output;
+    std::string s_input;
+    std::cout << "Which node is the output node?" << std::endl;
+    std::cin >> n_output;
+    std::cout << "Which source is the input source?" << std::endl;
+    std::cin >> s_input;
+
+    for(int i = 0; i < ss_sources.size(); i++){
+        if(ss_sources[i]->get_source_label() == s_input){
+            std::complex<double> input_s(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
+
+            InputSource = input_s;
+        }
+    }
+
+    for(int n = 0; f < f_stop; n++){
+        matrixX.setZero();
+        f = f_start * pow(10, n/n_ppd);
+        frequencies.push_back(f);
+        omega = 2 * M_PI * f;
+
+        for(int i = 0; i < ss_sources.size(); i++){
+            matrixA.setZero();
+            matrixB.setZero();
+
+            std::complex<double> ACSource(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
+
+            if(ss_sources[i]->get_type() == "AC V" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
+                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
+
+                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+
+                if(ss_sources[i]->give_nodeinfo().x != 0){
+                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                }
+                else{
+                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+                }
+
+                for(int j = 0; j < n_max; j++){
+                    matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
+                }
+
+                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
+            }
+            else if(ss_sources[i]->get_type() == "AC V" && ss_sources[i]->give_nodeinfo().x != 0 && ss_sources[i]->give_nodeinfo().y != 0){
+                //redo
+
+                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
+
+                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+
+                if(ss_sources[i]->give_nodeinfo().x != 0){
+                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                }
+                else{
+                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+                }
+            }
+            else if(ss_sources[i]->get_type() == "AC I" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
+                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
+
+                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+
+                if(ss_sources[i]->give_nodeinfo().x != 0){
+                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                }
+                else{
+                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+                }
+            }
+            else{
+                //floating ACISource
+                superposition_impedances = superposition(i, ss_sources, superposition_impedances);
+
+                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+
+                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = negative * ACSource;
+
+                matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+            }
+
+
+            matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
+        }
+
+        magnitude.push_back(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0)));
+        phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
+    }
+\
+    //}
+
+    for(int i = 0; i < magnitude.size(); i++){
+        std::cout << magnitude[i] << std::endl;
+    }
+        // Wrap into a vector
     
-  for(int i = 0; i < impedance_devices.size(); i++){
-    std::cout << impedance_devices[i]->show_nodeinfo() << std::endl;
-    std::cout << impedance_devices[i]->give_nodeinfo().x << std::endl;
-    std::cout << impedance_devices[i]->give_nodeinfo().y << std::endl;
-    std::cout << "Impedance: " << impedance_devices[i]->get_impedance(1) << std::endl;
-  }
+    std::ofstream myFile;
+    myFile.open("phtf2.txt");
+    if(!myFile.is_open()){
+      std::cout << "error opening file" << std::endl;
+      return EXIT_FAILURE;
+    }
+    myFile<<"Frequency"<<"\t"<<"Phase"<<std::endl;
+    for (int i=0; i<frequencies.size();i++){
+      myFile<<frequencies[i]<<"\t"<<phase[i]<<std::endl;
+    }
+    myFile.close();
+    
+    // Write the vector to CSV
+    
 
-  for(int i = 0; i < sources.size(); i++){
-    std::cout << sources[i]->show_nodeinfo() << std::endl;
-    std::cout << "Source Magnitude: " << sources[i]->get_magnitude() << std::endl;
-    std::cout << "Source Phase: " << sources[i]->get_phase() << std::endl;
-    std::cout << "Source Type: " << sources[i]->get_type() << std::endl;
-    std::cout << std::endl;
-  }
 
-  std::cout << "Number of points per decade: " << n_ppd << std::endl;
-  std::cout << "Start frequency: " << f_start << " Hz" << std::endl;
-  std::cout << "Stop frequency: " << f_stop << " Hz" << std::endl;
 
 }
 
+/*
+int main() {
+    // Make three vectors, each of length 100 filled with 1s, 2s, and 3s
+    std::vector<float> vec1;
+    vec1.push_back(50);
+    vec1.push_back(100);
+    vec1.push_back(500);
+    vec1.push_back(1000);
+    vec1.push_back(5000);
+    vec1.push_back(10000);
+    vec1.push_back(50000);
+
+   // std::vector<int> vec2(100, 2);
+    std::vector<float> vec3;
+    vec3.push_back(-12.8);vec3.push_back(-8.62);
+    vec3.push_back(-2.62);vec3.push_back(-1.43);
+    vec3.push_back(-0.323);vec3.push_back(-0.188);
+    vec3.push_back(-0.100);
+
+
+    // Wrap into a vector
+    std::vector<std::pair<std::string, std::vector<float>>> vals = {{"Frequency", vec1}, {"Gain", vec3}};
+
+    // Write the vector to CSV
+    write_csv("transf1", vals);
+
+    return 0;
+}*/

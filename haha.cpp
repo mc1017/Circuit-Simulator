@@ -680,10 +680,11 @@ std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<
     ImpedanceDevice* tmp;
 
     for(int i = 0; i < smallsig_sources.size(); i++){
-        if(smallsig_sources[i]->get_type() == "AC V" && i != input_source_index){
+        if((smallsig_sources[i]->get_type() == "AC V" || smallsig_sources[i]->get_type() == "DC V") && i != input_source_index){
             tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, 0.001);
             impedances.push_back(tmp);
         }
+        // edited to support DC analysis
     }
 
     return impedances;
@@ -726,7 +727,7 @@ MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> ss_
 
 int main(){
     std::ifstream infile; 
-    infile.open("superposition2.txt");
+    infile.open("nld3.txt");
  
     if(!infile.is_open()){
         std::cout << "error opening file" << std::endl;
@@ -736,11 +737,11 @@ int main(){
     std::string component;
     std::vector<std::string> substrs;
 
-    std::vector<ImpedanceDevice*> impedance_devices, ss_impedance_devices; 
+    std::vector<ImpedanceDevice*> impedance_devices, ss_impedance_devices, dc_impedance_devices; 
     ImpedanceDevice* tmp_id;
     ImpedanceDevice* tmp_id2;
 
-    std::vector<Source*> sources, ss_sources; 
+    std::vector<Source*> sources, ss_sources, dc_sources; 
     Source* tmp_s;
 
     std::vector<NonLinearDevice*> non_linear_devices;
@@ -748,6 +749,14 @@ int main(){
     // frequency step parameters, we assume ac analysis always done in decades
     double f_start, f_stop, n_ppd, f, omega;
     int n_max = 0;
+    //DC parameters
+    double Ieq, Geq, Vt, Vd, Is, Id;
+    Is = 1.1267 * pow(10, -15);
+    Vt = 0.025875;
+    Vd = 0.9;
+    Id = Is * (exp(Vd/Vt) - 1);
+    Geq = Is / Vt * exp(Vd/Vt);
+    Ieq = Id - Geq * Vd;
  
     while(std::getline(infile, component)){
         std::stringstream line(component);
@@ -764,6 +773,7 @@ int main(){
             
             impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
+            dc_impedance_devices.push_back(tmp_id);//new
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'C'){
@@ -775,30 +785,36 @@ int main(){
         }
         else if(substrs[0][0] == 'L'){
             tmp_id = new Inductor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
+            tmp_id2 = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), 0.001);
 
             impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
+            dc_impedance_devices.push_back(tmp_id2);//new
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] != 'A'){
             tmp_s = new DCVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), substrs[0]);
-            tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor("1m"));
+            tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), 0.001);
             //ss equivalent of DC Voltage Source is short circuit, represented by resistor of least possible value in C++
             sources.push_back(tmp_s);
+            dc_sources.push_back(tmp_s);//new
             ss_impedance_devices.push_back(tmp_id);
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] == 'A'){
             tmp_s = new ACVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]), substrs[0]);
+            tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), 0.001);
 
             sources.push_back(tmp_s);
             ss_sources.push_back(tmp_s);
+            dc_impedance_devices.push_back(tmp_id);//new
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'I' && substrs[3][0] != 'A'){
             tmp_s = new DCISource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), substrs[0]);
             
             sources.push_back(tmp_s);
+            dc_sources.push_back(tmp_s);//new
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'I' && substrs[3][0] == 'A'){
@@ -817,8 +833,12 @@ int main(){
         }
         else if(substrs[0][0] == 'D'){
             tmp_nld = new Diode(node_to_number(substrs[1]), node_to_number(substrs[2]), substrs[3]);
+            //tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), 1/Geq);
+            //tmp_s = new DCISource(node_to_number(substrs[1]), node_to_number(substrs[2]), Ieq, substrs[0]);
 
             non_linear_devices.push_back(tmp_nld);
+            //dc_impedance_devices.push_back(tmp_id);
+            //dc_sources.push_back(tmp_s);
             //include ss equivalent for diode
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
@@ -887,97 +907,117 @@ int main(){
 
     std::complex<double> zero(0,0), one(1,0), negative(-1,0), InputSource(0,0);
 
-    std::vector<double> frequencies;
-    std::vector<double> magnitude;
-    std::vector<double> phase;
+    // std::vector<double> frequencies;
+    // std::vector<double> magnitude;
+    // std::vector<double> phase;
     std::vector<ImpedanceDevice*> superposition_impedances;
 
-    int n_output;
-    std::string s_input;
-    std::cout << "Which node is the output node?" << std::endl;
-    std::cin >> n_output;
-    std::cout << "Which source is the input source?" << std::endl;
-    std::cin >> s_input;
+    // int n_output;
+    // std::string s_input;
+    // std::cout << "Which node is the output node?" << std::endl;
+    // std::cin >> n_output;
+    // std::cout << "Which source is the input source?" << std::endl;
+    // std::cin >> s_input;
 
-    for(int i = 0; i < ss_sources.size(); i++){
-        if(ss_sources[i]->get_source_label() == s_input){
-            std::complex<double> input_s(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
+    // for(int i = 0; i < ss_sources.size(); i++){
+    //     if(ss_sources[i]->get_source_label() == s_input){
+    //         std::complex<double> input_s(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
 
-            InputSource = input_s;
-        }
-    }
+    //         InputSource = input_s;
+    //     }
+    // }
+    double tmp = 0, Vd1 = 0;
 
-    for(int n = 0; f < f_stop; n++){
+
+    tmp_id = new Resistor(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, 1/Geq);
+    tmp_s = new DCISource(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, Ieq, "NA");
+    dc_impedance_devices.push_back(tmp_id);
+    dc_sources.push_back(tmp_s);
+    
+//    //while(Vd - Vd1 > 0.0000000001){
+    for(int i = 0; i< 100; i++){
+        std::cout << Vd << std::endl;
+        std::cout << std::endl;
         matrixX.setZero();
-        f = f_start * pow(10, n/n_ppd);
-        frequencies.push_back(f);
-        omega = 2 * M_PI * f;
-
-        for(int i = 0; i < ss_sources.size(); i++){
+    for(int i = 0; i < dc_sources.size(); i++){
             matrixA.setZero();
             matrixB.setZero();
 
-            std::complex<double> ACSource(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
+            std::complex<double> DCSource(dc_sources[i]->get_magnitude(), 0);
 
-            superposition_impedances = ss_impedance_devices;
-            superposition_impedances = superposition(i, ss_sources, superposition_impedances);
-            matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+            superposition_impedances = dc_impedance_devices;
+            superposition_impedances = superposition(i, dc_sources, superposition_impedances);
+            matrixA = cons_conductance_matrix(matrixA, dc_impedance_devices, 0);
 
+            if(dc_sources[i]->get_type() == "DC V" && (dc_sources[i]->give_nodeinfo().x == 0 || dc_sources[i]->give_nodeinfo().y == 0)){
 
-            if(ss_sources[i]->get_type() == "AC V" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
-
-                if(ss_sources[i]->give_nodeinfo().x != 0){
-                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                if(dc_sources[i]->give_nodeinfo().x != 0){
+                    matrixB(dc_sources[i]->give_nodeinfo().x - 1,0) = DCSource;
                 }
                 else{
-                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = negative * ACSource;
+                    matrixB(dc_sources[i]->give_nodeinfo().y - 1,0) = negative * DCSource;
                     //account for polarity of voltage source
                 }
 
                 for(int j = 0; j < n_max; j++){
-                    matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
+                    matrixA(dc_sources[i]->give_nodeinfo().x - 1,j) = zero;
                 }
 
-                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
+                matrixA(dc_sources[i]->give_nodeinfo().x - 1,dc_sources[i]->give_nodeinfo().x - 1) = one;
             }
-            else if(ss_sources[i]->get_type() == "AC V" && ss_sources[i]->give_nodeinfo().x != 0 && ss_sources[i]->give_nodeinfo().y != 0){
+            else if(dc_sources[i]->get_type() == "DC V" && dc_sources[i]->give_nodeinfo().x != 0 && dc_sources[i]->give_nodeinfo().y != 0){
                 //forms supernode row by adding the rows of the 2 nodes that form the supernode
                 for(int j = 0; j < n_max; j++){
-                    matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) + matrixA(ss_sources[i]->give_nodeinfo().x - 1, j);
+                    matrixA(dc_sources[i]->give_nodeinfo().y - 1, j) = matrixA(dc_sources[i]->give_nodeinfo().y - 1, j) + matrixA(dc_sources[i]->give_nodeinfo().x - 1, j);
                 }
                 //sets row representing floating source to all zero first
                 for(int j = 0; j < n_max; j++){
-                    matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
+                    matrixA(dc_sources[i]->give_nodeinfo().x - 1,j) = zero;
                 }
                 //inserts 1 and -1 into row representing voltage source
-                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
-                matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().y - 1) = negative;
+                matrixA(dc_sources[i]->give_nodeinfo().x - 1,dc_sources[i]->give_nodeinfo().x - 1) = one;
+                matrixA(dc_sources[i]->give_nodeinfo().x - 1,dc_sources[i]->give_nodeinfo().y - 1) = negative;
                 //sets correct entry of B matrix to represent the source
-                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+                matrixB(dc_sources[i]->give_nodeinfo().x - 1,0) = DCSource;
             }
-            else if(ss_sources[i]->get_type() == "AC I" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
+            else if(dc_sources[i]->get_type() == "DC I" && (dc_sources[i]->give_nodeinfo().x == 0 || dc_sources[i]->give_nodeinfo().y == 0)){
 
-                if(ss_sources[i]->give_nodeinfo().x != 0){
-                    matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = negative * ACSource;
+                if(dc_sources[i]->give_nodeinfo().x != 0){
+                    matrixB(dc_sources[i]->give_nodeinfo().x - 1,0) = negative * DCSource;
                     //negative due to orientation of current source
                 }
                 else{
-                    matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+                    matrixB(dc_sources[i]->give_nodeinfo().y - 1,0) = DCSource;
                 }
 
             }
             else{
-                matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = negative * ACSource;
+                matrixB(dc_sources[i]->give_nodeinfo().x - 1,0) = negative * DCSource;
 
-                matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+                matrixB(dc_sources[i]->give_nodeinfo().y - 1,0) = DCSource;
             }
 
             matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
         }
+            tmp = Vd;//0.7
+            Vd = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().x - 1, 0));
+            Vd1 = tmp;
+            //std::cout << Vd << std::endl;
 
-        magnitude.push_back(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0)));
-        phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
+            Id = Is * (exp(Vd/Vt) - 1);
+            Geq = Is / Vt * exp(Vd/Vt);
+            Ieq = Id - Geq * Vd;
+            tmp_id = new Resistor(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, 1/Geq);
+            //std::cout << "Geq: " << Geq << std::endl;
+            tmp_s = new DCISource(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, Ieq, "N/A");
+            //std::cout << "Ieq: " << Ieq << std::endl;
+            dc_impedance_devices[dc_impedance_devices.size() - 1] = tmp_id;
+            dc_sources[dc_sources.size() - 1] = tmp_s;
     }
+
+        //magnitude.push_back(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0)));
+        //phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
+
 
     //for(int i = 0; i < magnitude.size(); i++){
         //std::cout << magnitude[i] << std::endl;
@@ -987,18 +1027,18 @@ int main(){
         //std::cout << frequencies[i] << std::endl;
     //}
 
-    for(int i = phase.size() - 1; i > 0; i--){
-        if((phase[i] - phase[i-1]) > 180){
+    // for(int i = phase.size() - 1; i > 0; i--){
+    //     if((phase[i] - phase[i-1]) > 180){
             
-            if(phase[i - 1] > 0){
-                phase[i - 1] = phase[i - 1] - 360;
-            }
-            else{
-                phase[i - 1] = phase[i - 1] + 360;
-            }
-        //ensures phase of tf is continuous so that it can be plotted
-        }
-    }
+    //         if(phase[i - 1] > 0){
+    //             phase[i - 1] = phase[i - 1] - 360;
+    //         }
+    //         else{
+    //             phase[i - 1] = phase[i - 1] + 360;
+    //         }
+    //     //ensures phase of tf is continuous so that it can be plotted
+    //     }
+    // }
 
     //for(int i = 0; i < phase.size(); i++){
         //std::cout << phase[i] << std::endl;

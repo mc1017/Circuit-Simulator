@@ -727,7 +727,7 @@ MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> ss_
 
 int main(){
     std::ifstream infile; 
-    infile.open("nld3.txt");
+    infile.open("nld2.txt");
  
     if(!infile.is_open()){
         std::cout << "error opening file" << std::endl;
@@ -751,9 +751,9 @@ int main(){
     int n_max = 0;
     //DC parameters
     double Ieq, Geq, Vt, Vd, Is, Id;
-    Is = 1.1267 * pow(10, -15);
-    Vt = 0.025875;
-    Vd = 0.9;
+    Is = 1 * pow(10, -14);
+    Vt = 0.02586513921;
+    Vd = 0.7;
     Id = Is * (exp(Vd/Vt) - 1);
     Geq = Is / Vt * exp(Vd/Vt);
     Ieq = Id - Geq * Vd;
@@ -936,7 +936,7 @@ int main(){
     
 //    //while(Vd - Vd1 > 0.0000000001){
     for(int i = 0; i< 100; i++){
-        std::cout << Vd << std::endl;
+        std::cout << Vd << std::endl; 
         std::cout << std::endl;
         matrixX.setZero();
     for(int i = 0; i < dc_sources.size(); i++){
@@ -1000,7 +1000,7 @@ int main(){
             matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
         }
             tmp = Vd;//0.7
-            Vd = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().x - 1, 0));
+            Vd = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().x - 1, 0) - matrixX(non_linear_devices[0]->give_binodeinfo().y - 1, 0));
             Vd1 = tmp;
             //std::cout << Vd << std::endl;
 

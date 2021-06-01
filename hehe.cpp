@@ -7,18 +7,22 @@
 #include <math.h>
 #include <complex>
 #include "library/Eigen/Dense"
+using namespace Eigen;
 
+//define parsing structure for two terminal components
 struct NodePoint{
     int x;
     int y;
 };
 
+//define parsing structure for three terminal componenets
 struct NodeTri{
     int x;
     int y;
     int z;
 };
 
+//class for impedance decives (Resistor, Capacitor, Inductor)
 class ImpedanceDevice{
 public:
     virtual std::string show_nodeinfo() const = 0;
@@ -32,6 +36,7 @@ public:
     virtual ~ImpedanceDevice() { }
 };
 
+//inheritance class for resistor
 class Resistor : public ImpedanceDevice{
 public:
 
@@ -68,6 +73,7 @@ private:
     double resistance;
 };
 
+//inheritance class for capacitor
 class Capacitor : public ImpedanceDevice{
 public:
 
@@ -104,6 +110,7 @@ private :
     double capacitance;
 };
 
+//inheritance class for inductor
 class Inductor : public ImpedanceDevice{
 public:
 
@@ -140,6 +147,7 @@ private:
     double inductance;
 };
 
+//class for sources (DC Voltage, DC Current, AC Voltage, AC Current, Voltage Controlled Current)
 class Source{
 public:
     virtual std::string show_nodeinfo() const = 0;
@@ -161,6 +169,7 @@ public:
     virtual ~Source() { }
 };
 
+//inheritance class for DC Voltage Source
 class DCVSource : public Source{
 public:
 
@@ -215,6 +224,7 @@ private:
     std::string source_label;
 };
 
+//inheritance class for DC current Source
 class DCISource : public Source{
 public:
 
@@ -269,6 +279,7 @@ private:
     std::string source_label;
 };
 
+//inheritance class for AC Voltage Source
 class ACVSource : public Source{
 public:
 
@@ -324,6 +335,7 @@ private:
     std::string source_label;
 };
 
+//inheritance class for AC Current Source
 class ACISource : public Source{
 public:
 
@@ -379,6 +391,7 @@ private:
     std::string source_label;
 };
 
+//inheritance class for Voltage Controlled Current Source
 class VCCSource : public Source{
 public:
 
@@ -435,6 +448,7 @@ private:
     std::string source_label;
 };
 
+//class for non-linear devices (diode, bjt, mosfet)
 class NonLinearDevice{
 public:
     virtual std::string show_nodeinfo() const = 0;
@@ -448,6 +462,7 @@ public:
     virtual ~NonLinearDevice() { }
 };
 
+//inheritance class for diode
 class Diode: public NonLinearDevice{
 public:
 
@@ -486,6 +501,7 @@ private:
     std::string model;
 };
 
+//inheritance class for bjt
 class BJT: public NonLinearDevice{
 public: 
 
@@ -525,6 +541,7 @@ private:
     std::string model;
 };
 
+//inheritance class for mosfet
 class MOSFET: public NonLinearDevice{
 public: 
 
@@ -564,6 +581,7 @@ private:
     std::string model;
 };
 
+//change input string node into number
 int node_to_number(std::string node){
     std::string node_label;
     int node_number;
@@ -582,6 +600,7 @@ int node_to_number(std::string node){
     return 0;
 }
 
+//ignores non-numeric characters in value part and extract the magnitude
 double extract_double(std::string label){
     std::string double_string;
 
@@ -594,6 +613,7 @@ double extract_double(std::string label){
     return std::stod(double_string);
 }
 
+//convert prefix into value 
 double prefix_convertor(std::string value){
     std::string prefix;
     double num_quantity;
@@ -634,6 +654,7 @@ double prefix_convertor(std::string value){
     return num_quantity;
 }
 
+//obtain magnitude of AC source
 double get_AC_magnitude(std::string ac_param){
     std::string magnitude;
 
@@ -642,6 +663,8 @@ double get_AC_magnitude(std::string ac_param){
     return prefix_convertor(magnitude);
 }
 
+//find the number of nodes in the circuit
+//4 inputs is because VCCS is a 4 terminal device
 int max_node_number(int node_max, int node1, int node2, int node3, int node4){
     
     if((node1 > node_max) && (node1 >= node2) && (node1 >= node3) && (node1 >= node4)){
@@ -660,6 +683,7 @@ int max_node_number(int node_max, int node1, int node2, int node3, int node4){
     return node_max;
 }
 
+//calculate the magnitude of the transfer function
 double return_tf_magnitude(std::complex<double> source, std::complex<double> output_node){
     double gain;
 
@@ -668,6 +692,7 @@ double return_tf_magnitude(std::complex<double> source, std::complex<double> out
     return gain;
 }
 
+//calculate the phase of the transfer function
 double return_tf_phase(std::complex<double> source, std::complex<double> output_node){
     double phase_change;
 
@@ -676,6 +701,7 @@ double return_tf_phase(std::complex<double> source, std::complex<double> output_
     return phase_change;
 }
 
+//ignore input source but convert other sources into short circuit
 std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<Source*> smallsig_sources, std::vector<ImpedanceDevice*> impedances){
     ImpedanceDevice* tmp;
 
@@ -689,6 +715,7 @@ std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<
     return impedances;
 }
 
+//determine if resistor is parallel to the source
 bool detect_parallel_id(ImpedanceDevice* id, Source* source){
     if((id->give_nodeinfo().x == source->give_nodeinfo().x) && (id->give_nodeinfo().y == source->give_nodeinfo().y)){
         return true;
@@ -700,8 +727,7 @@ bool detect_parallel_id(ImpedanceDevice* id, Source* source){
     return false;
 }
 
-using namespace Eigen;
-
+//construct conductanc matrix only with conductances (ignoring soruce rows)
 MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> ss_impedances, double omega){
 
     for(int i = 0; i < ss_impedances.size(); i++){

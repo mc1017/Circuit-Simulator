@@ -707,7 +707,7 @@ std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<
     ImpedanceDevice* tmp;
 
     for(int i = 0; i < smallsig_sources.size(); i++){
-        if(smallsig_sources[i]->get_type() == "AC V" && i != input_source_index){
+        if((smallsig_sources[i]->get_type() == "AC V" || smallsig_sources[i]->get_type() == "DC V") && i != input_source_index){
             tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, 0.001);
             impedances.push_back(tmp);
         }
@@ -934,25 +934,25 @@ int main(){
     // std::cout << "Which source is the input source?" << std::endl;
     // std::cin >> s_input;
 
-    double Geq,Ieq, Vd =0.7, Id ,Is = 1*pow(10, -15), Vt = 25.875 *pow(10, -3), V1=0, V2=0, Vdlast =1;
-    Vdlast = Vd;
-    Id = Is * (exp(Vd/Vt)-1);
-    Geq = Is/Vt * exp(Vd/Vt);
-    Ieq = Id - Geq* Vd;
-    tmp_s= new DCISource(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, Ieq, "NA" );
-    tmp_id = new Resistor(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, 1/Geq);
-    dc_sources.push_back(tmp_s);
-    dc_impedance_devices.push_back(tmp_id);
-
+    double Geq,Ieq, Vd =0.7, Id ,Is = 1*pow(10, -14), Vt = 25.865 *pow(10, -3), V1=0, V2=0, Vdlast =1;
+    
 
     int iteration=0;
     
     // for (int m=0; m<1; m++){
-    while (std::abs(Vdlast - Vd)>=0.00001){
+    while (std::abs(Vdlast - Vd)>=0.000001){
         
-        
-        
-        
+        Vdlast = Vd;
+        Id = Is * (exp(Vd/Vt)-1);
+        std::cout<<"Id: "<<Id<<std::endl;
+        Geq = Is/Vt * exp(Vd/Vt);
+        std::cout<<"Geq: "<<Geq<<std::endl;
+        Ieq = Id - Geq* Vd;
+        std::cout<<"Ieq: "<<Ieq<<std::endl;
+        tmp_s= new DCISource(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, Ieq, "NA" );
+        tmp_id = new Resistor(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, 1/Geq);
+        dc_sources.push_back(tmp_s);
+        dc_impedance_devices.push_back(tmp_id);
         
         
         // std::cout<<dc_sources.size()<<std::endl;
@@ -1022,18 +1022,28 @@ int main(){
             matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
         }
         std::cout<<matrixA<<std::endl<<matrixB<<std::endl;
-        V1 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().x -1,0));
-        V2 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().y -1,0));
+        
+        if (non_linear_devices[0]->give_binodeinfo().x == 0){
+            V1 = 0;
+            V2 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().y -1,0));
+        }
+        else if (non_linear_devices[0]->give_binodeinfo().y == 0){
+            V1 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().x -1,0));
+            V2 =0;
+        }
+        else{
+            V1 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().x -1,0));
+            V2 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().y -1,0));
+        }
+        
         Vd = V1-V2;
         std::cout<<"Iteration: "<<iteration<<"\t"<<"Vd: "<<Vd<<"\t"<<"V1: "<<V1<<"\t"<<"V2: "<<V2<<std::endl;
         iteration++;
         matrixX.setZero();
-        Id = Is * (exp(Vd/Vt)-1);
-        Geq = Is/Vt * exp(Vd/Vt);
-        Ieq = Id - Geq* Vd;
-        tmp_s= new DCISource(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, Ieq, "NA" );
-        tmp_id = new Resistor(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, 1/Geq);
+        dc_sources.pop_back();
+        dc_impedance_devices.pop_back();
         
+
     }
     // V1 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().x -1,0));
     // V2 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().y -1,0));

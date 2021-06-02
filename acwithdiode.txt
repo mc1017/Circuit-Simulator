@@ -1,0 +1,10 @@
+V1 N001 N003 AC(0.5 0)
+R1 N002 N001 10k
+C1 N002 0 100n
+V2 N003 0 5
+D1 N002 N004 D
+L1 N004 0 100m
+.model D D
+.ac dec 10 0.01 10k
+.backanno
+.end

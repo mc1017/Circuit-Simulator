@@ -10,6 +10,7 @@
 
 using namespace Eigen;
 
+
 //define parsing structure for two terminal components
 struct NodePoint{
     int x;
@@ -41,7 +42,6 @@ public:
 
 
 //inheritance class for resistor
-
 class Resistor : public ImpedanceDevice{
 public:
 
@@ -52,13 +52,13 @@ public:
     }
 
     std::complex<double> get_impedance(double omega) const {
-        std::complex<double> impedance(resistance);
+        std::complex<double> impedance(resistance,0);
 
         return impedance;
     }
 
     std::complex<double> get_conductance(double omega) const {
-        std::complex<double> conductance(1/resistance);
+        std::complex<double> conductance(1/resistance,0);
 
         return conductance;
     }
@@ -618,6 +618,7 @@ int node_to_number(std::string node){
     return 0;
 }
 
+
 //ignores non-numeric characters in value part and extract the magnitude
 double extract_double(std::string label){
     std::string double_string;
@@ -637,11 +638,7 @@ double prefix_convertor(std::string value){
     std::string prefix;
     double num_quantity;
 
-    for(int i = 0; i < value.size(); i++){
-        if(std::isdigit(value[i]) == false && value[i] != '.'){
-        prefix.push_back(value[i]);
-        }
-    }
+    prefix.push_back(value[value.size()-1]);
 
     num_quantity = extract_double(value);
 
@@ -730,12 +727,12 @@ std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<
     ImpedanceDevice* tmp;
 
     for(int i = 0; i < smallsig_sources.size(); i++){
+
         if((smallsig_sources[i]->get_type() == "AC V" || smallsig_sources[i]->get_type() == "DC V") && i != input_source_index){
             tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, 0.001);
             impedances.push_back(tmp);
         }
         // edited to support DC analysis
-
     }
 
     return impedances;
@@ -755,23 +752,23 @@ bool detect_parallel_id(ImpedanceDevice* id, Source* source){
 }
 
 
-//construct conductanc matrix only with conductances (ignoring soruce rows)
+//construct conductanc matrix only with conductances (ignoring source rows)
 MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> impedances, double omega){
 
     for(int i = 0; i < impedances.size(); i++){
 
-            if(impedances[i]->give_nodeinfo().x != 0 && impedances[i]->give_nodeinfo().y != 0){
-                A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().y - 1) = A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().y - 1) - impedances[i]->get_conductance(omega);
-                A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().x - 1) = A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().x - 1) - impedances[i]->get_conductance(omega);
-                A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().x - 1) = A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().x - 1) + impedances[i]->get_conductance(omega);
-                A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().y - 1) = A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().y - 1) + impedances[i]->get_conductance(omega);
-            }
-            else if(impedances[i]->give_nodeinfo().x == 0 && impedances[i]->give_nodeinfo().y != 0){
-                A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().y - 1) = A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().y - 1) + impedances[i]->get_conductance(omega);
-            }
-            else if(impedances[i]->give_nodeinfo().x != 0 && impedances[i]->give_nodeinfo().y == 0){
-                A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().x - 1) = A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().x - 1) + impedances[i]->get_conductance(omega);
-            }
+        if(impedances[i]->give_nodeinfo().x != 0 && impedances[i]->give_nodeinfo().y != 0){
+            A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().y - 1) = A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().y - 1) - impedances[i]->get_conductance(omega);
+            A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().x - 1) = A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().x - 1) - impedances[i]->get_conductance(omega);
+            A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().x - 1) = A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().x - 1) + impedances[i]->get_conductance(omega);
+            A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().y - 1) = A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().y - 1) + impedances[i]->get_conductance(omega);
+        }
+        else if(impedances[i]->give_nodeinfo().x == 0 && impedances[i]->give_nodeinfo().y != 0){
+            A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().y - 1) = A(impedances[i]->give_nodeinfo().y - 1, impedances[i]->give_nodeinfo().y - 1) + impedances[i]->get_conductance(omega);
+        }
+        else if(impedances[i]->give_nodeinfo().x != 0 && impedances[i]->give_nodeinfo().y == 0){
+            A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().x - 1) = A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().x - 1) + impedances[i]->get_conductance(omega);
+        }
         
     }
 
@@ -814,6 +811,7 @@ int main(){
 
         while(line.good()){
             std::string substr;
+
             std::getline(line, substr, ' ');
 
             substrs.push_back(substr);
@@ -825,6 +823,7 @@ int main(){
             impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
             dc_impedance_devices.push_back(tmp_id);//new
+
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'C'){
@@ -832,6 +831,7 @@ int main(){
           
             impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
+
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'L'){
@@ -842,6 +842,7 @@ int main(){
             impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
             dc_impedance_devices.push_back(tmp_id2);//new
+
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] != 'A'){
@@ -852,6 +853,7 @@ int main(){
             sources.push_back(tmp_s);
             dc_sources.push_back(tmp_s);//new
             ss_impedance_devices.push_back(tmp_id);
+
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] == 'A'){
@@ -869,6 +871,7 @@ int main(){
             
             sources.push_back(tmp_s);
             dc_sources.push_back(tmp_s);//new
+
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'I' && substrs[3][0] == 'A'){
@@ -876,18 +879,21 @@ int main(){
 
             sources.push_back(tmp_s);
             ss_sources.push_back(tmp_s);
+
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'G'){
             tmp_s = new VCCSource(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), node_to_number(substrs[4]), prefix_convertor(substrs[5]), substrs[0]);
 
             sources.push_back(tmp_s);
+
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), node_to_number(substrs[4]));
         }
         else if(substrs[0][0] == 'D'){
             tmp_nld = new Diode(node_to_number(substrs[1]), node_to_number(substrs[2]), substrs[3]);
             
             non_linear_devices.push_back(tmp_nld);
+
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
         }
         else if(substrs[0][0] == 'Q'){
@@ -970,7 +976,7 @@ int main(){
         double Geq,Ieq, Vd =0.7, Id ,Is = 1*pow(10, -14), Vt = 25.865 *pow(10, -3), V1=0, V2=0, Vdlast =1;
         int iteration=0;
         
-        while (std::abs(Vdlast - Vd)>=0.000001){
+        while (std::abs(Vdlast - Vd)>=0.00001){
             
             Vdlast = Vd;
             Id = Is * (exp(Vd/Vt)-1);

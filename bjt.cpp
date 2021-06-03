@@ -1087,15 +1087,6 @@ int main(){
                         V1 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().y -1,0));
                         V2 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().z -1,0));
                     }
-                    Vd = V1- V2;
-                    
-                    Id = Is_bjt * (exp(Vd/Vt)-1);
-                    Geq = Is_bjt/Vt * exp(Vd/Vt);
-                    Ieq = Id - Geq* Vd;
-                    
-                    dc_sources.pop_back();
-                    tmp_s2= new DCISource(non_linear_devices[0]->give_trinodeinfo().x, non_linear_devices[0]->give_trinodeinfo().z, Id*beta, "NA" );
-                    dc_sources.push_back(tmp_s2);
                 }
             }
            

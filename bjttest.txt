@@ -1,0 +1,16 @@
+V1 N001 0 20
+Q1 N002 N005 N006 NPN
+R1 N001 N002 10k
+R2 N006 0 1k
+R3 N001 N005 240k
+R4 N005 0 22k
+V2 N004 0 AC(5 30)
+C1 N005 N004 100µ
+C2 N003 N002 100µ
+R5 N003 0 5k
+.model NPN NPN
+.model PNP PNP
+.lib C:\users\crossover\My Documents\LTspiceXVII\lib\cmp\standard.bjt
+.ac dec 10 0.001 100k
+.backanno
+.end

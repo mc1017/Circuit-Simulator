@@ -11,6 +11,7 @@
 using namespace Eigen;
 
 
+
 //define parsing structure for two terminal components
 struct NodePoint{
     int x;
@@ -42,6 +43,7 @@ public:
 
 
 //inheritance class for resistor
+
 class Resistor : public ImpedanceDevice{
 public:
 
@@ -52,13 +54,17 @@ public:
     }
 
     std::complex<double> get_impedance(double omega) const {
+
         std::complex<double> impedance(resistance,0);
+
 
         return impedance;
     }
 
     std::complex<double> get_conductance(double omega) const {
+
         std::complex<double> conductance(1/resistance,0);
+
 
         return conductance;
     }
@@ -618,7 +624,6 @@ int node_to_number(std::string node){
     return 0;
 }
 
-
 //ignores non-numeric characters in value part and extract the magnitude
 double extract_double(std::string label){
     std::string double_string;
@@ -727,7 +732,6 @@ std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<
     ImpedanceDevice* tmp;
 
     for(int i = 0; i < smallsig_sources.size(); i++){
-
         if((smallsig_sources[i]->get_type() == "AC V" || smallsig_sources[i]->get_type() == "DC V") && i != input_source_index){
             tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, 0.001);
             impedances.push_back(tmp);
@@ -752,10 +756,12 @@ bool detect_parallel_id(ImpedanceDevice* id, Source* source){
 }
 
 
-//construct conductanc matrix only with conductances (ignoring source rows)
+
+//construct conductance matrix only with conductances (ignoring soruce rows)
 MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> impedances, double omega){
 
     for(int i = 0; i < impedances.size(); i++){
+
 
         if(impedances[i]->give_nodeinfo().x != 0 && impedances[i]->give_nodeinfo().y != 0){
             A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().y - 1) = A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().y - 1) - impedances[i]->get_conductance(omega);
@@ -768,8 +774,7 @@ MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> imp
         }
         else if(impedances[i]->give_nodeinfo().x != 0 && impedances[i]->give_nodeinfo().y == 0){
             A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().x - 1) = A(impedances[i]->give_nodeinfo().x - 1, impedances[i]->give_nodeinfo().x - 1) + impedances[i]->get_conductance(omega);
-        }
-        
+        }       
     }
 
     return A;
@@ -777,6 +782,7 @@ MatrixXcd cons_conductance_matrix(MatrixXcd A, std::vector<ImpedanceDevice*> imp
 
 int main(){
     std::ifstream infile; 
+
 
     infile.open("acwithdiode.txt");
  
@@ -794,6 +800,8 @@ int main(){
 
     std::vector<Source*> sources, ss_sources, dc_sources; 
     Source* tmp_s;
+    Source* tmp_s2;
+
 
 
     //nonlinear values
@@ -972,21 +980,44 @@ int main(){
     std::cout << "Which source is the input source?" << std::endl;
     std::cin >> s_input;
 
-    for (int i=0; i<non_linear_devices.size(); i++){
-        double Geq,Ieq, Vd =0.7, Id ,Is = 1*pow(10, -14), Vt = 25.865 *pow(10, -3), V1=0, V2=0, Vdlast =1;
+
+    for (int count=0; count<non_linear_devices.size(); count++){
+        double Geq,Ieq, Vd =0.7, Id ,Is_diode = 1*pow(10, -14), Is_bjt = 1* pow(10,-16), Vt = 25.865 *pow(10, -3), V1=0, V2=0, Vdlast =1, beta=100;
         int iteration=0;
+
+        // for (int u =0; u<100; u++){
         
-        while (std::abs(Vdlast - Vd)>=0.00001){
+        while (std::abs(Vdlast - Vd)>=0.000001){
             
-            Vdlast = Vd;
-            Id = Is * (exp(Vd/Vt)-1);
-            Geq = Is/Vt * exp(Vd/Vt);
-            Ieq = Id - Geq* Vd;
-            tmp_s= new DCISource(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, Ieq, "NA" );
-            tmp_id = new Resistor(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, 1/Geq);
-            dc_sources.push_back(tmp_s);
-            dc_impedance_devices.push_back(tmp_id);
             
+            if (non_linear_devices[count]->get_model()=="D"){
+                Vdlast = Vd;
+                Id = Is_diode * (exp(Vd/Vt)-1);
+                Geq = Is_diode/Vt * exp(Vd/Vt);
+                Ieq = Id - Geq* Vd;
+                tmp_s= new DCISource(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, Ieq, "NA" );
+                tmp_id = new Resistor(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, 1/Geq);
+
+                dc_sources.push_back(tmp_s);
+                dc_impedance_devices.push_back(tmp_id);
+            }
+            
+            else if (non_linear_devices[count]->get_model()=="NPN"){
+                Vdlast = Vd;
+                Id = Is_bjt * (exp(Vd/Vt)-1);
+                Geq = Is_bjt/Vt * exp(Vd/Vt);
+                Ieq = Id - Geq* Vd;
+                tmp_s= new DCISource(non_linear_devices[0]->give_trinodeinfo().y, non_linear_devices[0]->give_trinodeinfo().z, Ieq, "NA" );
+                tmp_s2= new DCISource(non_linear_devices[0]->give_trinodeinfo().x, non_linear_devices[0]->give_trinodeinfo().z, Id*beta, "NA" );
+                tmp_id = new Resistor(non_linear_devices[0]->give_trinodeinfo().y, non_linear_devices[0]->give_trinodeinfo().z, 1/Geq);
+                
+                dc_sources.push_back(tmp_s);
+                dc_sources.push_back(tmp_s2);
+                dc_impedance_devices.push_back(tmp_id);
+            }
+            
+            
+           
             
             // std::cout<<dc_sources.size()<<std::endl;
             for(int i = 0; i < dc_sources.size(); i++){
@@ -1050,37 +1081,87 @@ int main(){
                     matrixB(dc_sources[i]->give_nodeinfo().x - 1,0) = negative * DCSource;
 
                     matrixB(dc_sources[i]->give_nodeinfo().y - 1,0) = DCSource;
-                }
-                
-                
+
+                } 
                 matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
+                if (non_linear_devices[count]->get_model()=="NPN"){
+                    if (non_linear_devices[count]->give_trinodeinfo().x ==0){
+                        V1 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().y -1,0));
+                        V2 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().z -1,0));
+                    }
+                    else if (non_linear_devices[count]->give_trinodeinfo().y == 0){
+                        V1 = 0;
+                        V2 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().z -1,0));
+                    }
+                    else if (non_linear_devices[count]->give_trinodeinfo().z == 0){
+                        V1 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().y -1,0));
+                        V2 = 0;
+                    }
+                    else{
+                        V1 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().y -1,0));
+                        V2 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().z -1,0));
+                    }
+                }
             }
-            
-            if (non_linear_devices[0]->give_binodeinfo().x == 0){
-                V1 = 0;
-                V2 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().y -1,0));
+           
+            if (non_linear_devices[count]->get_model()=="D"){
+                if (non_linear_devices[count]->give_binodeinfo().x == 0){
+                    V1 = 0;
+                    V2 = std::abs(matrixX(non_linear_devices[count]->give_binodeinfo().y -1,0));
+                }
+                else if (non_linear_devices[count]->give_binodeinfo().y == 0){
+                    V1 = std::abs(matrixX(non_linear_devices[count]->give_binodeinfo().x -1,0));
+                    V2 =0;
+                }
+                else{
+                    V1 = std::abs(matrixX(non_linear_devices[count]->give_binodeinfo().x -1,0));
+                    V2 = std::abs(matrixX(non_linear_devices[count]->give_binodeinfo().y -1,0));
+                }
+                dc_sources.pop_back();
+                dc_impedance_devices.pop_back();
             }
-            else if (non_linear_devices[0]->give_binodeinfo().y == 0){
-                V1 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().x -1,0));
-                V2 =0;
+            else if(non_linear_devices[count]->get_model() == "NPN"){
+                if (non_linear_devices[count]->give_trinodeinfo().x ==0){
+                    V1 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().y -1,0));
+                    V2 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().z -1,0));
+                }
+                else if (non_linear_devices[count]->give_trinodeinfo().y == 0){
+                    V1 = 0;
+                    V2 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().z -1,0));
+                }
+                else if (non_linear_devices[count]->give_trinodeinfo().z == 0){
+                    V1 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().y -1,0));
+                    V2 = 0;
+                }
+                else{
+                    V1 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().y -1,0));
+                    V2 = std::abs(matrixX(non_linear_devices[count]->give_trinodeinfo().z -1,0));
+                }
+                dc_sources.pop_back();
+                dc_sources.pop_back();
+                dc_impedance_devices.pop_back(); 
             }
-            else{
-                V1 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().x -1,0));
-                V2 = std::abs(matrixX(non_linear_devices[0]->give_binodeinfo().y -1,0));
-            }
+            std::cout<<"Vd: "<<Vd<<std::endl;
             
             Vd = V1-V2;
             // std::cout<<"Iteration: "<<iteration<<"\t"<<"Vd: "<<Vd<<"\t"<<"V1: "<<V1<<"\t"<<"V2: "<<V2<<std::endl;
             // iteration++;
             matrixX.setZero();
-            dc_sources.pop_back();
-            dc_impedance_devices.pop_back();
-        } 
-        std::cout<<"Vd: "<<Vd<<std::endl;
-        if (non_linear_devices[i]->get_model() == "D"){
-            tmp_id = new Resistor(non_linear_devices[i]->give_binodeinfo().x, non_linear_devices[i]->give_binodeinfo().y,Vt/Id );
+
+        }
+        
+        if (non_linear_devices[count]->get_model() == "D"){
+            tmp_id = new Resistor(non_linear_devices[count]->give_binodeinfo().x, non_linear_devices[count]->give_binodeinfo().y,Vt/Id );
             
             ss_impedance_devices.push_back(tmp_id);
+        }
+        else if (non_linear_devices[count]->get_model() == "NPN"){
+            tmp_id = new Resistor(non_linear_devices[count]->give_trinodeinfo().y, non_linear_devices[count]->give_trinodeinfo().z,Vt/Id );
+            //No ro beacause early voltage is assumed infinite, which ro = VA/ IC
+            tmp_s = new DCISource(non_linear_devices[0]->give_trinodeinfo().x, non_linear_devices[0]->give_trinodeinfo().z, Id*beta, "NA" ); 
+
+            ss_impedance_devices.push_back(tmp_id);
+            ss_sources.push_back(tmp_s);
         }
     }
 

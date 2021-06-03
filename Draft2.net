@@ -1,0 +1,13 @@
+* C:\users\crossover\Desktop\My Mac Desktop\SCHOOL WORK\Imperial College London\EEE\Year 1\Project\electronicsdesignproject\Draft2.asc
+V1 N001 N004 AC 0.5 0
+V2 N004 0 5
+R1 N002 N001 10k
+C1 N002 0 100n
+D1 N002 N003 D
+L1 N003 0 100m
+.model D D
+.lib C:\users\crossover\My Documents\LTspiceXVII\lib\cmp\standard.dio
+;op
+.ac dec 10 0.01 10k
+.backanno
+.end

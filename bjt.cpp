@@ -957,7 +957,7 @@ int main(){
     //std::cout << "Stop frequency: " << f_stop << " Hz" << std::endl;
     //std::cout << "Total number of nodes: " << n_max << std::endl;
 
-    MatrixXcd matrixA(n_max,n_max), matrixB(n_max, 1), matrixX(n_max, 1);
+    MatrixXcd matrixA(n_max,n_max), matrixG(n_max, n_max), matrixB(n_max, 1), matrixBref(n_max, 1), matrixX(n_max, 1);
 
     std::complex<double> zero(0,0), one(1,0), negative(-1,0), InputSource(0,0);
     std::vector<double> frequencies;
@@ -976,8 +976,8 @@ int main(){
         double Geq,Ieq, Vd =0.7, Id ,Is = 1*pow(10, -14), Vt = 25.865 *pow(10, -3), V1=0, V2=0, Vdlast =1;
         int iteration=0;
         
-        while (std::abs(Vdlast - Vd)>=0.00001){
-            
+        //while (std::abs(Vdlast - Vd)>=0.00001){
+        for(int i = 0; i < 100; i++){
             Vdlast = Vd;
             Id = Is * (exp(Vd/Vt)-1);
             Geq = Is/Vt * exp(Vd/Vt);
@@ -989,72 +989,101 @@ int main(){
             
             
             // std::cout<<dc_sources.size()<<std::endl;
-            for(int i = 0; i < dc_sources.size(); i++){
-                
-                matrixA.setZero();
-                
-                matrixB.setZero();
-                omega = 0;
-                
-                std::complex<double> DCSource(dc_sources[i]->get_magnitude(), 0);
-            
-                superposition_impedances = dc_impedance_devices;
-                
-                superposition_impedances = superposition(i, dc_sources, superposition_impedances);
-                
-                matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
-                
-                
-                if(dc_sources[i]->get_type() == "DC V" && (dc_sources[i]->give_nodeinfo().x == 0 || dc_sources[i]->give_nodeinfo().y == 0)){
+            omega = 0;
+            matrixG.setZero();
+            matrixG = cons_conductance_matrix(matrixG, dc_impedance_devices, omega);
+            matrixB.setZero();
+            matrixBref.setZero();
+            matrixA.setZero();
+            matrixA = cons_conductance_matrix(matrixA, dc_impedance_devices, omega);
 
-                    if(dc_sources[i]->give_nodeinfo().x != 0){
-                        matrixB(dc_sources[i]->give_nodeinfo().x - 1,0) = DCSource;
-                    }
-                    else{
-                        matrixB(dc_sources[i]->give_nodeinfo().y - 1,0) = negative * DCSource;
-                        //account for polarity of voltage source
-                    }
+            for(int j = 0; j < dc_sources.size(); j++){
+                std::complex<double> DCSource(dc_sources[j]->get_magnitude(), 0);
 
-                    for(int j = 0; j < n_max; j++){
-                        matrixA(dc_sources[i]->give_nodeinfo().x - 1,j) = zero;
-                    }
+                matrixBref.setZero();
 
-                    matrixA(dc_sources[i]->give_nodeinfo().x - 1,dc_sources[i]->give_nodeinfo().x - 1) = one;
-                }
-                else if(dc_sources[i]->get_type() == "DC V" && dc_sources[i]->give_nodeinfo().x != 0 && dc_sources[i]->give_nodeinfo().y != 0){
-                    //forms supernode row by adding the rows of the 2 nodes that form the supernode
-                    for(int j = 0; j < n_max; j++){
-                        matrixA(dc_sources[i]->give_nodeinfo().y - 1, j) = matrixA(dc_sources[i]->give_nodeinfo().y - 1, j) + matrixA(dc_sources[i]->give_nodeinfo().x - 1, j);
-                    }
-                    //sets row representing floating source to all zero first
-                    for(int j = 0; j < n_max; j++){
-                        matrixA(dc_sources[i]->give_nodeinfo().x - 1,j) = zero;
-                    }
-                    //inserts 1 and -1 into row representing voltage source
-                    matrixA(dc_sources[i]->give_nodeinfo().x - 1,dc_sources[i]->give_nodeinfo().x - 1) = one;
-                    matrixA(dc_sources[i]->give_nodeinfo().x - 1,dc_sources[i]->give_nodeinfo().y - 1) = negative;
-                    //sets correct entry of B matrix to represent the source
-                    matrixB(dc_sources[i]->give_nodeinfo().x - 1,0) = DCSource;
-                }
-                else if(dc_sources[i]->get_type() == "DC I" && (dc_sources[i]->give_nodeinfo().x == 0 || dc_sources[i]->give_nodeinfo().y == 0)){
+                if(dc_sources[j]->get_type() == "DC I" && (dc_sources[j]->give_nodeinfo().x == 0 || dc_sources[j]->give_nodeinfo().y == 0)){
 
-                    if(dc_sources[i]->give_nodeinfo().x != 0){
-                        matrixB(dc_sources[i]->give_nodeinfo().x - 1,0) = negative * DCSource;
+                    if(dc_sources[j]->give_nodeinfo().x != 0){
+                        matrixBref(dc_sources[j]->give_nodeinfo().x - 1,0) = negative * DCSource;
                         //negative due to orientation of current source
                     }
                     else{
-                        matrixB(dc_sources[i]->give_nodeinfo().y - 1,0) = DCSource;
+                        matrixBref(dc_sources[j]->give_nodeinfo().y - 1,0) = DCSource;
                     }
                 }
-                else{
-                    matrixB(dc_sources[i]->give_nodeinfo().x - 1,0) = negative * DCSource;
 
-                    matrixB(dc_sources[i]->give_nodeinfo().y - 1,0) = DCSource;
-                }
-                
-                
-                matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
+                matrixB = matrixB + matrixBref;
             }
+
+            for(int j = 0; j < dc_sources.size(); j++){
+                std::complex<double> DCSource(dc_sources[j]->get_magnitude(), 0);
+
+                matrixBref.setZero();
+
+                if(dc_sources[j]->get_type() == "DC I" && dc_sources[j]->give_nodeinfo().x != 0 && dc_sources[j]->give_nodeinfo().y != 0){
+                    matrixBref(dc_sources[j]->give_nodeinfo().x - 1,0) = negative * DCSource;
+
+                    matrixBref(dc_sources[j]->give_nodeinfo().y - 1,0) = DCSource;
+                }
+                matrixB = matrixB + matrixBref;
+                //std::cout << matrixB << std::endl;    
+            }
+
+            for(int j = 0; j < dc_sources.size(); j++){
+                std::complex<double> DCSource(dc_sources[j]->get_magnitude(), 0);
+
+                if(dc_sources[j]->get_type() == "DC V" && dc_sources[j]->give_nodeinfo().x != 0 && dc_sources[j]->give_nodeinfo().y != 0){
+                    //forms supernode row by adding the rows of the 2 nodes that form the supernode
+                    for(int k = 0; k < n_max; k++){
+                        matrixA(dc_sources[j]->give_nodeinfo().y - 1, k) = matrixG(dc_sources[j]->give_nodeinfo().y - 1, k) + matrixG(dc_sources[j]->give_nodeinfo().x - 1, k);
+                    }
+                }
+
+            }
+
+            for(int j = 0; j < dc_sources.size(); j++){
+                std::complex<double> DCSource(dc_sources[j]->get_magnitude(), 0);
+
+                if(dc_sources[j]->get_type() == "DC V" && dc_sources[j]->give_nodeinfo().x != 0 && dc_sources[j]->give_nodeinfo().y != 0){
+                    //sets row representing floating source to all zero first
+                    for(int k = 0; k < n_max; k++){
+                        matrixA(dc_sources[j]->give_nodeinfo().x - 1,k) = zero;
+                    }
+                    //inserts 1 and -1 into row representing voltage source
+                    matrixA(dc_sources[j]->give_nodeinfo().x - 1,dc_sources[j]->give_nodeinfo().x - 1) = one;
+                    matrixA(dc_sources[j]->give_nodeinfo().x - 1,dc_sources[j]->give_nodeinfo().y - 1) = negative;
+                    //sets correct entry of B matrix to represent the source
+                    matrixB(dc_sources[j]->give_nodeinfo().x - 1,0) = DCSource;
+                }
+
+            }
+
+            for(int j = 0; j < dc_sources.size(); j++){
+                std::complex<double> DCSource(dc_sources[j]->get_magnitude(), 0);
+
+                if(dc_sources[j]->get_type() == "DC V" && (dc_sources[j]->give_nodeinfo().x == 0 || dc_sources[j]->give_nodeinfo().y == 0)){
+
+                    if(dc_sources[j]->give_nodeinfo().x != 0){
+                        matrixB(dc_sources[j]->give_nodeinfo().x - 1,0) = DCSource;
+                    }
+                    else{
+                        matrixB(dc_sources[j]->give_nodeinfo().y - 1,0) = negative * DCSource;
+                        //account for polarity of voltage source
+                    }
+
+                    for(int k = 0; k < n_max; k++){
+                        matrixA(dc_sources[j]->give_nodeinfo().x - 1,k) = zero;
+                    }
+
+                    matrixA(dc_sources[j]->give_nodeinfo().x - 1,dc_sources[j]->give_nodeinfo().x - 1) = one;
+                }
+            }
+
+            std::cout << matrixA << std::endl;
+            std::cout << std::endl;
+
+            matrixX = matrixA.fullPivLu().solve(matrixB);
             
             if (non_linear_devices[0]->give_binodeinfo().x == 0){
                 V1 = 0;
@@ -1091,7 +1120,7 @@ int main(){
             InputSource = input_s;
         }
     }
-    std::cout<<"Input: " <<InputSource<<std::endl;
+    //std::cout<<"Input: " <<InputSource<<std::endl;
 
     for(int n = 0; f < f_stop; n++){
         matrixX.setZero();

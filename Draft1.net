@@ -12,7 +12,7 @@ R5 N003 0 5k
 .model NPN NPN
 .model PNP PNP
 .lib C:\users\crossover\My Documents\LTspiceXVII\lib\cmp\standard.bjt
-;ac dec 10 0.001 100k
-.op
+.ac dec 10 0.001 100k
+;op
 .backanno
 .end

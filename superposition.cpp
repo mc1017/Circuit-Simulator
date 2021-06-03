@@ -976,9 +976,9 @@ int main(){
         double Geq,Ieq, Vd =0.7, Id ,Is_diode = 1*pow(10, -14), Is_bjt = 1* pow(10,-16), Vt = 25.865 *pow(10, -3), V1=0, V2=0, Vdlast =1, beta=100;
         int iteration=0;
         
-        while (std::abs(Vdlast - Vd)>=0.001){
+        //while (std::abs(Vdlast - Vd)>=0.001){
+        for(int count = 0; count < 10; count++){
             Vdlast = Vd;
-        // for(int i = 0; i < 100; i++){
             if (non_linear_devices[i]->get_model()=="D"){ 
                 Id = Is_diode * (exp(Vd/Vt)-1);
                 Geq = Is_diode/Vt * exp(Vd/Vt);
@@ -1088,20 +1088,35 @@ int main(){
                 }
             }
 
+            std::complex<double> a(20,0);
+            std::complex<double> b(-beta*Ieq, 0);
+            std::complex<double> e(-Ieq, 0);
+            std::complex<double> f(101*Ieq, 0);
+
+            matrixB(0,0) = a;
+            matrixB(1,0) = b;
+            matrixB(4,0) = e;
+            matrixB(5,0) = f;
+
+            std::cout << matrixB << std::endl;
+            std::cout << matrixA << std::endl;
+
             matrixX = matrixA.fullPivLu().solve(matrixB);
+
+            std::cout << matrixX << std::endl;
             
             if (non_linear_devices[i]->get_model()=="D"){
                 if (non_linear_devices[i]->give_binodeinfo().x == 0){
                     V1 = 0;
-                    V2 = std::abs(matrixX(non_linear_devices[i]->give_binodeinfo().y -1,0));
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().y -1,0));
                 }
                 else if (non_linear_devices[i]->give_binodeinfo().y == 0){
-                    V1 = std::abs(matrixX(non_linear_devices[i]->give_binodeinfo().x -1,0));
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().x -1,0));
                     V2 =0;
                 }
                 else{
-                    V1 = std::abs(matrixX(non_linear_devices[i]->give_binodeinfo().x -1,0));
-                    V2 = std::abs(matrixX(non_linear_devices[i]->give_binodeinfo().y -1,0));
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().x -1,0));
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().y -1,0));
                 }
                 dc_sources.pop_back();
                 dc_impedance_devices.pop_back();
@@ -1109,15 +1124,16 @@ int main(){
             else if(non_linear_devices[i]->get_model() == "NPN"){
                 if (non_linear_devices[i]->give_trinodeinfo().y == 0){
                     V1 = 0;
-                    V2 = std::abs(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
                 }
                 else if (non_linear_devices[i]->give_trinodeinfo().z == 0){
-                    V1 = std::abs(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
                     V2 = 0;
                 }
                 else{
-                    V1 = std::abs(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
-                    V2 = std::abs(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
+                    std::cout << V1 << std::endl;
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
                 }
                 dc_sources.pop_back();
                 dc_sources.pop_back();
@@ -1227,9 +1243,9 @@ int main(){
         phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
     }
 
-    for(int i = 0; i < magnitude.size(); i++){
-        std::cout << 20* log10(magnitude[i]) << std::endl;
-    }
+    // for(int i = 0; i < magnitude.size(); i++){
+    //     std::cout << 20* log10(magnitude[i]) << std::endl;
+    // }
 
     // for(int i = 0; i < frequencies.size(); i++){
     //     std::cout << frequencies[i] << std::endl;

@@ -1,3 +1,1 @@
-for(int i = 0; i < magnitude.size(); i++){
-        std::cout << magnitude[i] << std::endl;
-    }
+while (std::abs(Vdlast - Vd)>=0.00001){

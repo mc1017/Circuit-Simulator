@@ -983,11 +983,11 @@ int main(){
     std::cout << "Which source is the input source?" << std::endl;
     std::cin >> s_input;
 
-    for (int i=0; i<non_linear_devices.size(); i++){
-        double Geq,Ieq, Vd =0.7, Id ,Is_diode = 1*pow(10, -14), Is_bjt = 1* pow(10,-16), Vt = 25.865 *pow(10, -3), V1=0, V2=0, Vdlast =1, beta=100;
+    for(int i=0; i<non_linear_devices.size(); i++){
+        double Geq, Ieq, Vd = 0.7, Id, Is_diode = 1 * pow(10, -14), Is_bjt = 1 * pow(10,-16), Vt = 25.865 * pow(10, -3), V1 = 0, V2 = 0, Vdlast = 1, beta = 100, Kp = 2 * pow(10,-5);
         int iteration=0;
         
-        while (std::abs(Vdlast - Vd)>=0.00000001){
+        while(std::abs(Vdlast - Vd)>=0.00000001){
 
             Vdlast = Vd;
             
@@ -1024,6 +1024,12 @@ int main(){
                 dc_sources.push_back(tmp_s);
                 dc_sources.push_back(tmp_s2);
                 dc_impedance_devices.push_back(tmp_id);
+            }
+            else if(non_linear_devices[i]->get_model() == "NMOS"){
+                Id = 0.5 * pow(Vd, 2);
+                tmp_s = new DCISource(non_linear_devices[i]->give_trinodeinfo().x, non_linear_devices[i]->give_trinodeinfo().z, Id, "NA");
+
+                dc_sources.push_back(tmp_s);
             }
             
             omega = 0;
@@ -1123,7 +1129,7 @@ int main(){
 
             matrixX = matrixA.fullPivLu().solve(matrixB);
             
-            if (non_linear_devices[i]->get_model()=="D"){
+            if(non_linear_devices[i]->get_model()=="D"){
                 if (non_linear_devices[i]->give_binodeinfo().x == 0){
                     V1 = 0;
                     V2 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().y -1,0));
@@ -1133,8 +1139,8 @@ int main(){
                     V2 =0;
                 }
                 else{
-                V1 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().x -1,0));
-                V2 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().y -1,0));
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().x -1,0));
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().y -1,0));
                 }
                 //conditional for grounding needed, if not the matrix coordinate will be negative
                 dc_sources.pop_back();
@@ -1153,6 +1159,7 @@ int main(){
                     V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
                     V2 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
                 }
+
                 dc_sources.pop_back();
                 dc_sources.pop_back();
                 dc_impedance_devices.pop_back(); 
@@ -1170,12 +1177,31 @@ int main(){
                     V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
                     V2 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
                 }
+
                 dc_sources.pop_back();
                 dc_sources.pop_back();
                 dc_impedance_devices.pop_back(); 
             }
+            else if(non_linear_devices[i]->get_model() == "NMOS"){
+                if (non_linear_devices[i]->give_trinodeinfo().y == 0){
+                    V1 = 0;
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
+                }
+                else if (non_linear_devices[i]->give_trinodeinfo().z == 0){
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
+                    V2 = 0;
+                }
+                else{
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
+                }
+
+                dc_sources.pop_back();
+            }
             
             Vd = V1-V2;
+            std::cout << Vd << std::endl;
+            std::cout << std::endl;
             matrixX.setZero();
         } 
 

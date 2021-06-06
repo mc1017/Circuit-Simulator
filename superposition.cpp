@@ -991,23 +991,35 @@ int main(){
 
             Vdlast = Vd;
             
-            if (non_linear_devices[i]->get_model()=="D"){ 
+            if(non_linear_devices[i]->get_model() == "D"){ 
                 Id = Is_diode * (exp(Vd/Vt)-1);
                 Geq = Is_diode/Vt * exp(Vd/Vt);
                 Ieq = Id - Geq* Vd;
-                tmp_s= new DCISource(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, Ieq, "NA" );
-                tmp_id = new Resistor(non_linear_devices[0]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, 1/Geq);
+                tmp_s= new DCISource(non_linear_devices[i]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, Ieq, "NA" );
+                tmp_id = new Resistor(non_linear_devices[i]->give_binodeinfo().x, non_linear_devices[0]->give_binodeinfo().y, 1/Geq);
 
                 dc_sources.push_back(tmp_s);
                 dc_impedance_devices.push_back(tmp_id);
             }
-            else if (non_linear_devices[i]->get_model()=="NPN"){
+            else if(non_linear_devices[i]->get_model() == "NPN"){
                 Id = Is_bjt/beta * (exp(Vd/Vt)-1);
                 Geq = Is_bjt/Vt * exp(Vd/Vt);
                 Ieq = Id - Geq* Vd;
-                tmp_s = new DCISource(non_linear_devices[0]->give_trinodeinfo().y, non_linear_devices[0]->give_trinodeinfo().z, Ieq, "NA" );
-                tmp_s2 = new DCISource(non_linear_devices[0]->give_trinodeinfo().x, non_linear_devices[0]->give_trinodeinfo().z, Id*beta, "NA" );
-                tmp_id = new Resistor(non_linear_devices[0]->give_trinodeinfo().y, non_linear_devices[0]->give_trinodeinfo().z, 1/Geq);
+                tmp_s = new DCISource(non_linear_devices[i]->give_trinodeinfo().y, non_linear_devices[0]->give_trinodeinfo().z, Ieq, "NA" );
+                tmp_s2 = new DCISource(non_linear_devices[i]->give_trinodeinfo().x, non_linear_devices[0]->give_trinodeinfo().z, Id*beta, "NA" );
+                tmp_id = new Resistor(non_linear_devices[i]->give_trinodeinfo().y, non_linear_devices[0]->give_trinodeinfo().z, 1/Geq);
+                
+                dc_sources.push_back(tmp_s);
+                dc_sources.push_back(tmp_s2);
+                dc_impedance_devices.push_back(tmp_id);
+            }
+            else if(non_linear_devices[i]->get_model() == "PNP"){
+                Id = Is_bjt/beta * (exp(Vd/Vt)-1);
+                Geq = Is_bjt/Vt * exp(Vd/Vt);
+                Ieq = Id - Geq* Vd;
+                tmp_s = new DCISource(non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().y, Ieq, "NA");
+                tmp_s2 = new DCISource(non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().x, Id*beta, "NA");
+                tmp_id = new Resistor(non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().y, 1/Geq);
                 
                 dc_sources.push_back(tmp_s);
                 dc_sources.push_back(tmp_s2);
@@ -1121,9 +1133,10 @@ int main(){
                     V2 =0;
                 }
                 else{
-                    V1 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().x -1,0));
-                    V2 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().y -1,0));
+                V1 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().x -1,0));
+                V2 = std::real(matrixX(non_linear_devices[i]->give_binodeinfo().y -1,0));
                 }
+                //conditional for grounding needed, if not the matrix coordinate will be negative
                 dc_sources.pop_back();
                 dc_impedance_devices.pop_back();
             }
@@ -1144,20 +1157,45 @@ int main(){
                 dc_sources.pop_back();
                 dc_impedance_devices.pop_back(); 
             }
+            else if(non_linear_devices[i]->get_model() == "PNP"){
+                if(non_linear_devices[i]->give_trinodeinfo().y == 0){
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
+                    V2 = 0;
+                }
+                else if(non_linear_devices[i]->give_trinodeinfo().z == 0){
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
+                    V2 = 0;
+                }
+                else{
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
+                }
+                dc_sources.pop_back();
+                dc_sources.pop_back();
+                dc_impedance_devices.pop_back(); 
+            }
             
             Vd = V1-V2;
             matrixX.setZero();
         } 
 
-        if (non_linear_devices[i]->get_model() == "D"){
+        if(non_linear_devices[i]->get_model() == "D"){
             tmp_id = new Resistor(non_linear_devices[i]->give_binodeinfo().x, non_linear_devices[i]->give_binodeinfo().y,Vt/Id );
             
             ss_impedance_devices.push_back(tmp_id);
         }
-        else if (non_linear_devices[i]->get_model() == "NPN"){
+        else if(non_linear_devices[i]->get_model() == "NPN"){
             tmp_id = new Resistor(non_linear_devices[i]->give_trinodeinfo().y, non_linear_devices[i]->give_trinodeinfo().z, Vt/Id);
             //No ro beacause early voltage is assumed infinite, which ro = VA/ IC
             tmp_s = new VCCSource(non_linear_devices[i]->give_trinodeinfo().x, non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().y, non_linear_devices[i]->give_trinodeinfo().z, Id*beta/Vt, "Gnpn"); 
+            //VCCS with Gm value of Id*beta/Vt
+            ss_impedance_devices.push_back(tmp_id);
+            ss_sources.push_back(tmp_s);
+        }
+        else if(non_linear_devices[i]->get_model() == "PNP"){
+            tmp_id = new Resistor(non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().y, Vt/Id);
+            //No ro beacause early voltage is assumed infinite, which ro = VA/ IC
+            tmp_s = new VCCSource(non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().x, non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().y, Id*beta/Vt, "Gnpn"); 
             //VCCS with Gm value of Id*beta/Vt
             ss_impedance_devices.push_back(tmp_id);
             ss_sources.push_back(tmp_s);
@@ -1278,9 +1316,9 @@ int main(){
         phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
     }
 
-    for(int i = 0; i < magnitude.size(); i++){
-         std::cout << magnitude[i] << std::endl;
-    }
+    // for(int i = 0; i < magnitude.size(); i++){
+    //      std::cout << magnitude[i] << std::endl;
+    // }
 
     // for(int i = 0; i < frequencies.size(); i++){
     //     std::cout << frequencies[i] << std::endl;

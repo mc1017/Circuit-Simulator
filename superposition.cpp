@@ -29,13 +29,13 @@ struct NodeTri{
 class ImpedanceDevice{
 public:
     virtual std::string show_nodeinfo() const = 0;
-    // can make use of inheritance for this function, as they are all two terminal devices without polarity
+    
     virtual std::complex<double> get_impedance(double omega) const = 0;
 
     virtual std::complex<double> get_conductance(double omega) const = 0;
 
     virtual NodePoint give_nodeinfo() const = 0;
-    // can make use of inheritance for this function, as they are all two terminal devices without polarity
+    
     virtual ~ImpedanceDevice() { }
 };
 
@@ -159,11 +159,17 @@ class Source{
 public:
     virtual std::string show_nodeinfo() const = 0;
 
-    virtual double get_magnitude() const = 0;
+    virtual double get_magnitude() const { 
+        return 0;
+    }
 
-    virtual double get_phase() const = 0;
+    virtual double get_phase() const { 
+        return 0;
+    }
 
-    virtual double get_gm() const = 0;
+    virtual double get_gm() const {
+        return 0;
+    }
 
     virtual std::string get_type() const = 0;
 
@@ -171,7 +177,14 @@ public:
 
     virtual NodePoint give_nodeinfo() const = 0;
 
-    virtual NodePoint give_controlinfo() const = 0;
+    virtual NodePoint give_controlinfo() const {
+        NodePoint C;
+
+        C.x = 0;
+        C.y = 0;
+
+        return C;
+    }
 
     virtual ~Source() { }
 };
@@ -191,14 +204,6 @@ public:
         return voltage;
     }
 
-    double get_phase() const { 
-        return 0;
-    }
-
-    double get_gm() const {
-        return 0;
-    }
-
     std::string get_type() const {
         return "DC V";
     }
@@ -214,15 +219,6 @@ public:
         N.y = node_minus;
 
         return N;
-    }
-
-    NodePoint give_controlinfo() const {
-        NodePoint C;
-
-        C.x = 0;
-        C.y = 0;
-
-        return C;
     }
 
 private:
@@ -247,14 +243,6 @@ public:
         return current;
     }
 
-    double get_phase() const { 
-        return 0;
-    }
-
-    double get_gm() const {
-        return 0;
-    }
-
     std::string get_type() const {
         return "DC I";
     }
@@ -270,15 +258,6 @@ public:
         N.y = node_out;
 
         return N;
-    }
-
-    NodePoint give_controlinfo() const {
-        NodePoint C;
-
-        C.x = 0;
-        C.y = 0;
-
-        return C;
     }
 
 private:
@@ -307,10 +286,6 @@ public:
         return phase;
     }
 
-    double get_gm() const {
-        return 0;
-    }
-
     std::string get_type() const {
         return "AC V";
     }
@@ -326,15 +301,6 @@ public:
         N.y = node_minus;
 
         return N;
-    }
-
-    NodePoint give_controlinfo() const {
-        NodePoint C;
-
-        C.x = 0;
-        C.y = 0;
-
-        return C;
     }
 
 private:
@@ -364,10 +330,6 @@ public:
         return phase;
     }
 
-    double get_gm() const {
-        return 0;
-    }
-
     std::string get_type() const {
         return "AC I";
     }
@@ -383,15 +345,6 @@ public:
         N.y = node_out;
 
         return N;
-    }
-
-    NodePoint give_controlinfo() const {
-        NodePoint C;
-
-        C.x = 0;
-        C.y = 0;
-
-        return C;
     }
 
 private:
@@ -411,14 +364,6 @@ public:
 
     std::string show_nodeinfo() const {
         return "Nodal Coordinates: (" + std::to_string(node_plus) + ", " + std::to_string(node_minus) + ")";
-    }
-
-    double get_magnitude() const {
-        return 0;
-    }
-
-    double get_phase() const {
-        return 0;
     }
 
     double get_gm() const {
@@ -466,9 +411,24 @@ class NonLinearDevice{
 public:
     virtual std::string show_nodeinfo() const = 0;
 
-    virtual NodePoint give_binodeinfo() const = 0;
+    virtual NodePoint give_binodeinfo() const {
+        NodePoint N;
 
-    virtual NodeTri give_trinodeinfo() const = 0;
+        N.x = 0;
+        N.y = 0;
+
+        return N;
+    }
+
+    virtual NodeTri give_trinodeinfo() const {
+        NodeTri N;
+
+        N.x = 0;
+        N.y = 0;
+        N.z = 0;
+
+        return N;
+    }
 
     virtual std::string get_model() const = 0;
 
@@ -495,16 +455,6 @@ public:
         return N;
     }
 
-    NodeTri give_trinodeinfo() const {
-        NodeTri N;
-
-        N.x = 0;
-        N.y = 0;
-        N.z = 0;
-
-        return N;
-    }
-
     std::string get_model() const {
         return model;
     }
@@ -524,15 +474,6 @@ public:
 
     std::string show_nodeinfo() const {
         return "Nodal Coordinates: (" + std::to_string(node_c) + ", " + std::to_string(node_b) + ", " + std::to_string(node_e) +")";
-    }
-
-    NodePoint give_binodeinfo() const {
-        NodePoint N;
-
-        N.x = 0;
-        N.y = 0;
-
-        return N;
     }
 
     NodeTri give_trinodeinfo() const {
@@ -567,15 +508,6 @@ public:
         return "Nodal Coordinates: (" + std::to_string(node_d) + ", " + std::to_string(node_g) + ", "  + std::to_string(node_s) + ")";
     }
 
-    NodePoint give_binodeinfo() const {
-        NodePoint N;
-
-        N.x = 0;
-        N.y = 0;
-
-        return N;
-    }
-
     NodeTri give_trinodeinfo() const {
         NodeTri N;
 
@@ -598,26 +530,6 @@ private:
 };
 
 
-//change input string node into number
-int node_to_number(std::string node){
-    std::string node_label;
-    int node_number;
-
-    if(node != "0"){
-
-        for(int i = 1; i < node.size(); i++){
-            node_label.push_back(node[i]);
-        }
-
-        node_number = std::stoi(node_label);
-
-        return node_number;
-    }
-
-    return 0;
-}
-
-
 //ignores non-numeric characters in value part and extract the magnitude
 double extract_double(std::string label){
     std::string double_string;
@@ -629,6 +541,18 @@ double extract_double(std::string label){
     }
 
     return std::stod(double_string);
+}
+
+
+//change input string node into number
+int node_to_number(std::string node){
+    int node_number;
+    double node_double;
+
+    node_double = extract_double(node);
+    node_number = (int) node_double;
+
+    return node_number;
 }
 
 
@@ -685,21 +609,17 @@ double get_AC_magnitude(std::string ac_param){
 //this function can be eliminated by allowing prefix convertor to filter out the bracket
 
 //find the number of nodes in the circuit
-//4 inputs is because VCCS is a 4 terminal device
-// can we limit to three inputs? because VCCS control nodes are presumably connected to other components present in the circuit
-int max_node_number(int node_max, int node1, int node2, int node3, int node4){
+// can limit to three node inputs because VCCS control nodes are presumably connected to other components present in the circuit that will be considered
+int max_node_number(int node_max, int node1, int node2, int node3){
     
-    if((node1 > node_max) && (node1 >= node2) && (node1 >= node3) && (node1 >= node4)){
+    if((node1 > node_max) && (node1 >= node2) && (node1 >= node3)){
         return node1;
     }
-    else if((node2 > node_max) && (node2 >= node1) && (node2 >= node3) && (node2 >= node4)){
+    else if((node2 > node_max) && (node2 >= node1) && (node2 >= node3)){
         return node2;
     }
-    else if((node3 > node_max) && (node3 >= node1) && (node3 >= node2) && (node3 >= node4)){
+    else if((node3 > node_max) && (node3 >= node1) && (node3 >= node2)){
         return node3;
-    }
-    else if((node4 > node_max) && (node4 >= node1) && (node4 >= node2) && (node4 >= node3)){
-        return node4;
     }
 
     return node_max;
@@ -834,7 +754,7 @@ int main(){
             ss_impedance_devices.push_back(tmp_id);
             dc_impedance_devices.push_back(tmp_id);//new
 
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'C'){
             tmp_id = new Capacitor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
@@ -842,7 +762,7 @@ int main(){
             impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
 
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'L'){
             tmp_id = new Inductor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
@@ -853,7 +773,7 @@ int main(){
             ss_impedance_devices.push_back(tmp_id);
             dc_impedance_devices.push_back(tmp_id2);//new
 
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] != 'A'){
             tmp_s = new DCVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), substrs[0]);
@@ -864,7 +784,7 @@ int main(){
             dc_sources.push_back(tmp_s);//new
             ss_impedance_devices.push_back(tmp_id);
 
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] == 'A'){
             tmp_s = new ACVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]), substrs[0]);
@@ -874,7 +794,7 @@ int main(){
             ss_sources.push_back(tmp_s);
             dc_impedance_devices.push_back(tmp_id);//new
 
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'I' && substrs[3][0] != 'A'){
             tmp_s = new DCISource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), substrs[0]);
@@ -882,7 +802,7 @@ int main(){
             sources.push_back(tmp_s);
             dc_sources.push_back(tmp_s);//new
 
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'I' && substrs[3][0] == 'A'){
             tmp_s = new ACISource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]), substrs[0]);
@@ -890,7 +810,7 @@ int main(){
             sources.push_back(tmp_s);
             ss_sources.push_back(tmp_s);
 
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'G'){
             tmp_s = new VCCSource(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), node_to_number(substrs[4]), prefix_convertor(substrs[5]), substrs[0]);
@@ -898,28 +818,28 @@ int main(){
             sources.push_back(tmp_s);
             ss_sources.push_back(tmp_s);
 
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), node_to_number(substrs[4]));
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'D'){
             tmp_nld = new Diode(node_to_number(substrs[1]), node_to_number(substrs[2]), substrs[3]);
             
             non_linear_devices.push_back(tmp_nld);
 
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0, 0);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'Q'){
             tmp_nld = new BJT(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), substrs[4]);
 
             non_linear_devices.push_back(tmp_nld);
             
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), 0);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]));
         }
         else if(substrs[0][0] == 'M'){
             tmp_nld = new MOSFET(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), substrs[4]);
 
             non_linear_devices.push_back(tmp_nld);
             
-            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), 0);
+            n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]));
         }
         else if(substrs[0] == ".ac"){
             n_ppd = prefix_convertor(substrs[2]);
@@ -985,7 +905,6 @@ int main(){
 
     for(int i=0; i<non_linear_devices.size(); i++){
         double Geq, Ieq, Vd = 0.7, Id, Is_diode = 1 * pow(10, -14), Is_bjt = 1 * pow(10,-16), Vt = 25.865 * pow(10, -3), V1 = 0, V2 = 0, Vdlast = 1, beta = 100, Kp = 2 * pow(10,-5);
-        int iteration=0;
         
         while(std::abs(Vdlast - Vd)>=0.00000001){
 
@@ -1372,13 +1291,13 @@ int main(){
         phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
     }
 
-    // for(int i = 0; i < magnitude.size(); i++){
-    //      std::cout << magnitude[i] << std::endl;
-    // }
-
-    for(int i = 0; i < frequencies.size(); i++){
-        std::cout << frequencies[i] << std::endl;
+    for(int i = 0; i < magnitude.size(); i++){
+         std::cout << magnitude[i] << std::endl;
     }
+
+    // for(int i = 0; i < frequencies.size(); i++){
+    //     std::cout << frequencies[i] << std::endl;
+    // }
 
     for(int i = phase.size() - 1; i > 0; i--){
         if((phase[i] - phase[i-1]) > 180){

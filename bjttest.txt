@@ -8,9 +8,5 @@ V2 N004 0 AC(5 30)
 C1 N005 N004 100µ
 C2 N003 N002 100µ
 R5 N003 0 5k
-.model NPN NPN
-.model PNP PNP
-.lib C:\users\crossover\My Documents\LTspiceXVII\lib\cmp\standard.bjt
 .ac dec 10 0.001 100k
-.backanno
 .end

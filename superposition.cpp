@@ -1026,8 +1026,14 @@ int main(){
                 dc_impedance_devices.push_back(tmp_id);
             }
             else if(non_linear_devices[i]->get_model() == "NMOS"){
-                Id = 0.5 * pow(Vd, 2);
+                Id = 0.5 * Kp * pow(Vd, 2);
                 tmp_s = new DCISource(non_linear_devices[i]->give_trinodeinfo().x, non_linear_devices[i]->give_trinodeinfo().z, Id, "NA");
+
+                dc_sources.push_back(tmp_s);
+            }
+            else if(non_linear_devices[i]->get_model() == "PMOS"){
+                Id = 0.5 * Kp * pow(Vd, 2);
+                tmp_s = new DCISource(non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().x, Id, "NA");
 
                 dc_sources.push_back(tmp_s);
             }
@@ -1170,8 +1176,8 @@ int main(){
                     V2 = 0;
                 }
                 else if(non_linear_devices[i]->give_trinodeinfo().z == 0){
-                    V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
-                    V2 = 0;
+                    V1 = 0;
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
                 }
                 else{
                     V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
@@ -1198,10 +1204,24 @@ int main(){
 
                 dc_sources.pop_back();
             }
+            else if(non_linear_devices[i]->get_model() == "PMOS"){
+                if (non_linear_devices[i]->give_trinodeinfo().y == 0){
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
+                    V2 = 0;
+                }
+                else if (non_linear_devices[i]->give_trinodeinfo().z == 0){
+                    V1 = 0;
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
+                }
+                else{
+                    V1 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().z -1,0));
+                    V2 = std::real(matrixX(non_linear_devices[i]->give_trinodeinfo().y -1,0));
+                }
+
+                dc_sources.pop_back();
+            }
             
             Vd = V1-V2;
-            std::cout << Vd << std::endl;
-            std::cout << std::endl;
             matrixX.setZero();
         } 
 
@@ -1221,9 +1241,19 @@ int main(){
         else if(non_linear_devices[i]->get_model() == "PNP"){
             tmp_id = new Resistor(non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().y, Vt/Id);
             //No ro beacause early voltage is assumed infinite, which ro = VA/ IC
-            tmp_s = new VCCSource(non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().x, non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().y, Id*beta/Vt, "Gnpn"); 
+            tmp_s = new VCCSource(non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().x, non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().y, Id*beta/Vt, "Gpnp"); 
             //VCCS with Gm value of Id*beta/Vt
             ss_impedance_devices.push_back(tmp_id);
+            ss_sources.push_back(tmp_s);
+        }
+        else if(non_linear_devices[i]->get_model() == "NMOS"){
+            tmp_s = new VCCSource(non_linear_devices[i]->give_trinodeinfo().x, non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().y, non_linear_devices[i]->give_trinodeinfo().z, 2 * std::sqrt(0.5 * Kp * Id), "Gnmos");
+
+            ss_sources.push_back(tmp_s);
+        }
+        else if(non_linear_devices[i]->get_model() == "PMOS"){
+            tmp_s = new VCCSource(non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().x, non_linear_devices[i]->give_trinodeinfo().z, non_linear_devices[i]->give_trinodeinfo().y, 2 * std::sqrt(0.5 * Kp * Id), "Gpmos");
+
             ss_sources.push_back(tmp_s);
         }
     }

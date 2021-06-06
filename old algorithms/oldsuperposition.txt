@@ -1,0 +1,71 @@
+    // for(int n = 0; f < f_stop; n++){
+    //     matrixX.setZero();
+    //     f = f_start * pow(10, n/n_ppd);
+    //     frequencies.push_back(f);
+    //     omega = 2 * M_PI * f;
+
+    //     for(int i = 0; i < ss_sources.size(); i++){
+    //         matrixA.setZero();
+    //         matrixB.setZero();
+
+    //         std::complex<double> ACSource(ss_sources[i]->get_magnitude() * cos(ss_sources[i]->get_phase() * M_PI / 180), ss_sources[i]->get_magnitude() * sin(ss_sources[i]->get_phase() * M_PI / 180));
+
+    //         superposition_impedances = ss_impedance_devices;
+    //         superposition_impedances = superposition(i, ss_sources, superposition_impedances);
+    //         matrixA = cons_conductance_matrix(matrixA, superposition_impedances, omega);
+
+
+    //         if(ss_sources[i]->get_type() == "AC V" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
+
+    //             if(ss_sources[i]->give_nodeinfo().x != 0){
+    //                 matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+    //             }
+    //             else{
+    //                 matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = negative * ACSource;
+    //                 //account for polarity of voltage source
+    //             }
+
+    //             for(int j = 0; j < n_max; j++){
+    //                 matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
+    //             }
+
+    //             matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
+    //         }
+    //         else if(ss_sources[i]->get_type() == "AC V" && ss_sources[i]->give_nodeinfo().x != 0 && ss_sources[i]->give_nodeinfo().y != 0){
+    //             //forms supernode row by adding the rows of the 2 nodes that form the supernode
+    //             for(int j = 0; j < n_max; j++){
+    //                 matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) = matrixA(ss_sources[i]->give_nodeinfo().y - 1, j) + matrixA(ss_sources[i]->give_nodeinfo().x - 1, j);
+    //             }
+    //             //sets row representing floating source to all zero first
+    //             for(int j = 0; j < n_max; j++){
+    //                 matrixA(ss_sources[i]->give_nodeinfo().x - 1,j) = zero;
+    //             }
+    //             //inserts 1 and -1 into row representing voltage source
+    //             matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().x - 1) = one;
+    //             matrixA(ss_sources[i]->give_nodeinfo().x - 1,ss_sources[i]->give_nodeinfo().y - 1) = negative;
+    //             //sets correct entry of B matrix to represent the source
+    //             matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = ACSource;
+    //         }
+    //         else if(ss_sources[i]->get_type() == "AC I" && (ss_sources[i]->give_nodeinfo().x == 0 || ss_sources[i]->give_nodeinfo().y == 0)){
+
+    //             if(ss_sources[i]->give_nodeinfo().x != 0){
+    //                 matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = negative * ACSource;
+    //                 //negative due to orientation of current source
+    //             }
+    //             else{
+    //                 matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+    //             }
+
+    //         }
+    //         else{
+    //             matrixB(ss_sources[i]->give_nodeinfo().x - 1,0) = negative * ACSource;
+
+    //             matrixB(ss_sources[i]->give_nodeinfo().y - 1,0) = ACSource;
+    //         }
+
+    //         matrixX = matrixX + matrixA.fullPivLu().solve(matrixB);
+    //     }
+
+    //     magnitude.push_back(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0)));
+    //     phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
+    // }

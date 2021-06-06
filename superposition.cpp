@@ -1376,9 +1376,9 @@ int main(){
     //      std::cout << magnitude[i] << std::endl;
     // }
 
-    // for(int i = 0; i < frequencies.size(); i++){
-    //     std::cout << frequencies[i] << std::endl;
-    // }
+    for(int i = 0; i < frequencies.size(); i++){
+        std::cout << frequencies[i] << std::endl;
+    }
 
     for(int i = phase.size() - 1; i > 0; i--){
         if((phase[i] - phase[i-1]) > 180){

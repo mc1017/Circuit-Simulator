@@ -737,6 +737,7 @@ void gvsource_analysis(MatrixXcd& A, MatrixXcd& B, Source* source_gv, const std:
 }
 
 
+//resets matrices after every iteration of loop for DC and AC analysis
 void reset_matrices(MatrixXcd& A, MatrixXcd& B, MatrixXcd& Bref, MatrixXcd& G, MatrixXcd& X, std::vector<ImpedanceDevice*> impedance_devices, double omega){
     A.setZero();
     A = cons_conductance_matrix(A, impedance_devices, omega);

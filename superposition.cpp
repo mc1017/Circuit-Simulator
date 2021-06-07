@@ -562,7 +562,7 @@ double prefix_convertor(std::string value){
     double num_quantity;
     //loop needed as not all prefixes are 1 character long
     for(int i = 0; i < value.size(); i++){
-        if(std::isdigit(value[i]) == false && value[i] != '.' && value[i] != '-'){
+        if(std::isdigit(value[i]) == false && value[i] != '.' && value[i] != '-' && value[i] != '(' && value[i] != 'A' && value[i] != 'C'){
             prefix.push_back(value[i]);
         }
     }
@@ -597,16 +597,6 @@ double prefix_convertor(std::string value){
     return num_quantity;
 }
 
-
-//obtain magnitude of AC source
-double get_AC_magnitude(std::string ac_param){
-    std::string magnitude;
-
-    magnitude = std::to_string(extract_double(ac_param)) + ac_param[ac_param.size()-1];
-
-    return prefix_convertor(magnitude);
-}
-//this function can be eliminated by allowing prefix convertor to filter out the bracket
 
 //find the number of nodes in the circuit
 // can limit to three node inputs because VCCS control nodes are presumably connected to other components present in the circuit that will be considered
@@ -643,38 +633,6 @@ double return_tf_phase(std::complex<double> source, std::complex<double> output_
     phase_change = (std::arg(output_node) - std::arg(source)) * 180 / M_PI;
 
     return phase_change;
-}
-
-
-//ignore input source but convert other sources into short circuit
-//function no longer needed
-std::vector<ImpedanceDevice*> superposition(int input_source_index, std::vector<Source*> smallsig_sources, std::vector<ImpedanceDevice*> impedances){
-    ImpedanceDevice* tmp;
-
-    for(int i = 0; i < smallsig_sources.size(); i++){
-
-        if((smallsig_sources[i]->get_type() == "AC V" || smallsig_sources[i]->get_type() == "DC V") && i != input_source_index){
-            tmp = new Resistor(smallsig_sources[i]->give_nodeinfo().x, smallsig_sources[i]->give_nodeinfo().y, 0.001);
-            impedances.push_back(tmp);
-        }
-        // edited to support DC analysis
-    }
-
-    return impedances;
-}
-
-
-//determine if resistor is parallel to the source
-//function no longer needed
-bool detect_parallel_id(ImpedanceDevice* id, Source* source){
-    if((id->give_nodeinfo().x == source->give_nodeinfo().x) && (id->give_nodeinfo().y == source->give_nodeinfo().y)){
-        return true;
-    }
-    else if((id->give_nodeinfo().x == source->give_nodeinfo().y) && (id->give_nodeinfo().y == source->give_nodeinfo().x)){
-        return true;
-    }
-
-    return false;
 }
 
 
@@ -787,7 +745,7 @@ int main(){
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'V' && substrs[3][0] == 'A'){
-            tmp_s = new ACVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]), substrs[0]);
+            tmp_s = new ACVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), extract_double(substrs[4]), substrs[0]);
             tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), 0.001);
 
             sources.push_back(tmp_s);
@@ -805,7 +763,7 @@ int main(){
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }
         else if(substrs[0][0] == 'I' && substrs[3][0] == 'A'){
-            tmp_s = new ACISource(node_to_number(substrs[1]), node_to_number(substrs[2]), get_AC_magnitude(substrs[3]), extract_double(substrs[4]), substrs[0]);
+            tmp_s = new ACISource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), extract_double(substrs[4]), substrs[0]);
 
             sources.push_back(tmp_s);
             ss_sources.push_back(tmp_s);

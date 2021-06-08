@@ -723,17 +723,22 @@ void gvsource_analysis(MatrixXcd& A, MatrixXcd& B, Source* source_gv, const std:
 
     if(source_gv->give_nodeinfo().x != 0){
         B(source_gv->give_nodeinfo().x - 1,0) = gvsource;
+
+        for(int k = 0; k < n_max; k++){
+            A(source_gv->give_nodeinfo().x - 1,k) = zero;
+        }
+
+        A(source_gv->give_nodeinfo().x - 1,source_gv->give_nodeinfo().x - 1) = one;
     }
     else{
         B(source_gv->give_nodeinfo().y - 1,0) = negative * gvsource;
         //account for polarity of voltage source
-    }
+        for(int k = 0; k < n_max; k++){
+            A(source_gv->give_nodeinfo().y - 1,k) = zero;
+        }
 
-    for(int k = 0; k < n_max; k++){
-        A(source_gv->give_nodeinfo().x - 1,k) = zero;
+        A(source_gv->give_nodeinfo().y - 1,source_gv->give_nodeinfo().y - 1) = one;
     }
-
-    A(source_gv->give_nodeinfo().x - 1,source_gv->give_nodeinfo().x - 1) = one;
 }
 
 
@@ -765,7 +770,7 @@ int main(){
  
     std::string component;
     std::vector<std::string> substrs;
-
+    //can we delete impedance_devices and sources? not needed for analysis portion only needed to test parse
     std::vector<ImpedanceDevice*> impedance_devices, ss_impedance_devices, dc_impedance_devices; 
     ImpedanceDevice* tmp_id;
     ImpedanceDevice* tmp_id2;
@@ -817,7 +822,7 @@ int main(){
 
             impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
-            dc_impedance_devices.push_back(tmp_id2);//new
+            dc_impedance_devices.push_back(tmp_id2);
 
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
         }

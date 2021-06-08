@@ -692,12 +692,13 @@ void vccsource_analysis(MatrixXcd& A, Source* source_vcc, const std::complex<dou
 
 
 //forms supernode row by adding the rows of the 2 nodes that form the supernode
-void fvsource_analysis1(MatrixXcd& A, const MatrixXcd& G, Source* source_fv, const int& n_max){
+void fvsource_analysis1(MatrixXcd& A, MatrixXcd& B, const MatrixXcd& G, const MatrixXcd& Bref, Source* source_fv, const int& n_max){
 
     for(int k = 0; k < n_max; k++){
         A(source_fv->give_nodeinfo().y - 1, k) = G(source_fv->give_nodeinfo().y - 1, k) + G(source_fv->give_nodeinfo().x - 1, k);
     }
 
+    B(source_fv->give_nodeinfo().y - 1, 0) = Bref(source_fv->give_nodeinfo().y - 1, 0) + Bref(source_fv->give_nodeinfo().x - 1, 0);
 }
 
 
@@ -1021,6 +1022,8 @@ int main(){
                 matrixB = matrixB + matrixBref;                
             }
 
+            matrixBref = matrixB;
+
             for(int j = 0; j < dc_sources.size(); j++){
 
                 if(dc_sources[j]->get_type() == "VCCS"){
@@ -1033,7 +1036,7 @@ int main(){
             for(int j = 0; j < dc_sources.size(); j++){
 
                 if(dc_sources[j]->get_type() == "DC V" && dc_sources[j]->give_nodeinfo().x != 0 && dc_sources[j]->give_nodeinfo().y != 0){
-                    fvsource_analysis1(matrixA, matrixG, dc_sources[j], n_max);
+                    fvsource_analysis1(matrixA, matrixB, matrixG, matrixBref, dc_sources[j], n_max);
                 }
             }
 
@@ -1204,6 +1207,8 @@ int main(){
             matrixB = matrixB + matrixBref;                
         }
 
+        matrixBref = matrixB;
+
         for(int j = 0; j < ss_sources.size(); j++){
             std::complex<double> ACSource(ss_sources[j]->get_magnitude() * cos(ss_sources[j]->get_phase() * M_PI / 180), ss_sources[j]->get_magnitude() * sin(ss_sources[j]->get_phase() * M_PI / 180));
 
@@ -1218,7 +1223,7 @@ int main(){
             std::complex<double> ACSource(ss_sources[j]->get_magnitude() * cos(ss_sources[j]->get_phase() * M_PI / 180), ss_sources[j]->get_magnitude() * sin(ss_sources[j]->get_phase() * M_PI / 180));
 
             if(ss_sources[j]->get_type() == "AC V" && ss_sources[j]->give_nodeinfo().x != 0 && ss_sources[j]->give_nodeinfo().y != 0){
-                fvsource_analysis1(matrixA, matrixG, ss_sources[j], n_max);
+                fvsource_analysis1(matrixA, matrixB, matrixG, matrixBref, ss_sources[j], n_max);
             }
         }
 

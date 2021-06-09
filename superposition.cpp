@@ -675,7 +675,7 @@ void isource_analysis(MatrixXcd& Bref, Source* source_i, const std::complex<doub
 }
 
 
-//considers both grounded and floating current sources
+//considers both grounded and floating VCCS
 void vccsource_analysis(MatrixXcd& A, Source* source_vcc, const std::complex<double>& gm){
 
     if(source_vcc->give_nodeinfo().x != 0){

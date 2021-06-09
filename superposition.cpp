@@ -943,9 +943,6 @@ int main(){
     MatrixXcd matrixA(n_max,n_max), matrixG(n_max, n_max), matrixB(n_max, 1), matrixBref(n_max, 1), matrixX(n_max, 1);
 
     std::complex<double> InputSource(0,0);
-    std::vector<double> frequencies;
-    std::vector<double> magnitude;
-    std::vector<double> phase;
 
     int n_output;
     std::string s_input;
@@ -1272,42 +1269,7 @@ int main(){
         outfile << f << "," << 20 * log10(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0))) << "," << current_phase << std::endl;
 
         last_phase = current_phase;
-
-        // magnitude.push_back(20 * log10(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0))));
-        // phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
     }
-
-    // for(int i = 0; i < magnitude.size(); i++){
-    //      std::cout << magnitude[i] << std::endl;
-    // }
-
-    // for(int i = 0; i < frequencies.size(); i++){
-    //     std::cout << frequencies[i] << std::endl;
-    // }
-
-    // for(int i = phase.size() - 1; i > 0; i--){
-    //     if((phase[i] - phase[i-1]) > 180){
-            
-    //         if(phase[i - 1] > 0){
-    //             phase[i - 1] = phase[i - 1] - 360;
-    //         }
-    //         else{
-    //             phase[i - 1] = phase[i - 1] + 360;
-    //         }
-    //     //ensures phase of tf is continuous so that it can be plotted
-    //     }
-    // }
-
-    // for(int i = 0; i < phase.size(); i++){
-    //     std::cout << phase[i] << std::endl;
-    // }
-
-    // std::ofstream outfile;
-
-
-    // for(int i = 0; i < frequencies.size(); i++){
-    //     outfile << frequencies[i] << "," << magnitude[i] << "," << phase[i] << std::endl;
-    // }
 
 }
 

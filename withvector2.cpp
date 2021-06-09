@@ -1188,19 +1188,6 @@ int main(){
         }
     }
 
-    std::ofstream outfile;
-
-    outfile.open("output.txt");
-
-    if(!outfile.is_open()){
-        std::cout << "error opening file" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    outfile << "frequencey,magnitude,phase" << std::endl;
-
-    double current_phase, last_phase;
-
     for(int n = 0; f < f_stop; n++){
         f = f_start * pow(10, n/n_ppd);
         frequencies.push_back(f);
@@ -1258,23 +1245,8 @@ int main(){
 
         matrixX = matrixA.fullPivLu().solve(matrixB);
 
-        current_phase = return_tf_phase(InputSource, matrixX(n_output - 1, 0));
-
-        if(current_phase - last_phase > 180){
-            if(current_phase > 0){
-                current_phase = current_phase - 360;
-            }
-            else{
-                current_phase = current_phase + 360;
-            }
-        }
-
-        outfile << f << "," << 20 * log10(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0))) << "," << current_phase << std::endl;
-
-        last_phase = current_phase;
-
-        // magnitude.push_back(20 * log10(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0))));
-        // phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
+        magnitude.push_back(20 * log10(return_tf_magnitude(InputSource, matrixX(n_output - 1, 0))));
+        phase.push_back(return_tf_phase(InputSource, matrixX(n_output - 1, 0)));
     }
 
     // for(int i = 0; i < magnitude.size(); i++){
@@ -1285,29 +1257,37 @@ int main(){
     //     std::cout << frequencies[i] << std::endl;
     // }
 
-    // for(int i = phase.size() - 1; i > 0; i--){
-    //     if((phase[i] - phase[i-1]) > 180){
+    for(int i = phase.size() - 1; i > 0; i--){
+        if((phase[i] - phase[i-1]) > 180){
             
-    //         if(phase[i - 1] > 0){
-    //             phase[i - 1] = phase[i - 1] - 360;
-    //         }
-    //         else{
-    //             phase[i - 1] = phase[i - 1] + 360;
-    //         }
-    //     //ensures phase of tf is continuous so that it can be plotted
-    //     }
-    // }
+            if(phase[i - 1] > 0){
+                phase[i - 1] = phase[i - 1] - 360;
+            }
+            else{
+                phase[i - 1] = phase[i - 1] + 360;
+            }
+        //ensures phase of tf is continuous so that it can be plotted
+        }
+    }
 
     // for(int i = 0; i < phase.size(); i++){
     //     std::cout << phase[i] << std::endl;
     // }
 
-    // std::ofstream outfile;
+    std::ofstream outfile;
 
+    outfile.open("output.txt");
 
-    // for(int i = 0; i < frequencies.size(); i++){
-    //     outfile << frequencies[i] << "," << magnitude[i] << "," << phase[i] << std::endl;
-    // }
+    if(!outfile.is_open()){
+        std::cout << "error opening file" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    outfile << "frequencey,magnitude,phase" << std::endl;
+
+    for(int i = 0; i < frequencies.size(); i++){
+        outfile << frequencies[i] << "," << magnitude[i] << "," << phase[i] << std::endl;
+    }
 
 }
 

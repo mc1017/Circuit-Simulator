@@ -1200,7 +1200,6 @@ int main(){
 
     for(int n = 0; f < f_stop; n++){
         f = f_start * pow(10, n/n_ppd);
-        frequencies.push_back(f);
         omega = 2 * M_PI * f;
 
         reset_matrices(matrixA, matrixB, matrixBref, matrixG, matrixX, ss_impedance_devices, omega);
@@ -1270,6 +1269,5 @@ int main(){
 
         last_phase = current_phase;
     }
-
 }
 

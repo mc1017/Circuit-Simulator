@@ -772,9 +772,9 @@ int main(){
     double value = 10000;
     
     for (int s=0; s<30; s++){
-        std::string name="timetest"+ std::to_string(s+1)+".txt";
+        std::string testname="timetest"+ std::to_string(s+1)+".txt";
 
-        testfile.open(name);
+        testfile.open(testname);
         testfile<<"V1" << " " << "N001"<< " " << "0" << " " << "AC(5 0)"<<std::endl;
         testfile<<"L1" << " "<<"N002"<<" "<<"N001"<<" "<<"100m"<<std::endl;
         testfile<<"D1"<<" "<<"N002"<<' '<<"N003"<<" "<<"D"<<std::endl;
@@ -784,17 +784,25 @@ int main(){
         }
         
         for (int q=0; q<4*s; q++){
-            testfile<<"R"<<std::to_string(1+q)<<" "<<"N00"<<std::to_string(2+q);
+            
+            
             if ((q+1) ==4*s){
-                testfile<<" "<<"0"<<" "<<value/(4*s)<<std::endl;
+                testfile<<"R"<<std::to_string(1+q)<<" "<<"N00"<<std::to_string(3+q)<<" 0 "<<value/(4*s)<<std::endl;
+            }
+            else if (q==0){
+                testfile<<"R1 N002 N004 "<<value/(4*s)<<std::endl;
+            }
+            else if (q==1){
+                testfile<<"R2 N004 N005 "<<value/(4*s)<<std::endl;
             }
             else{
-                testfile<<" "<<"N00"<<std::to_string(3+q)<<" "<<value/(4*s)<<std::endl; 
+                testfile<<"R"<<std::to_string(1+q)<<" "<<"N00"<<std::to_string(3+q)<<" "<<"N00"<<std::to_string(4+q)<<" "<<value/(4*s)<<std::endl; 
             }
              
         }
         testfile<<".ac "<<"dec "<<"10 "<<"0.01 "<<"10k"<<std::endl;
         testfile<<".end"<<std::endl;
+        testfile.close();
 
         timestamp_t t0 = get_timestamp();
         std::ifstream infile; 
@@ -805,7 +813,7 @@ int main(){
         timestamp_t t1 = get_timestamp();
         
         timestamp_t t2 = get_timestamp();
-        infile.open(name);
+        infile.open(testname);
     
         if(!infile.is_open()){
             std::cout << "error opening file" << std::endl;
@@ -828,7 +836,7 @@ int main(){
         NonLinearDevice* tmp_nld;
         
         // frequency step parameters, we assume ac analysis always done in decades
-        double f_start, f_stop, n_ppd, f, omega = 0;
+        double f_start, f_stop, n_ppd, f=0, omega = 0;
         int n_max = 0;
     
         while(std::getline(infile, component)){
@@ -950,7 +958,6 @@ int main(){
         }
 
         infile.close();
-        testfile.close();
         
         // for(int i = 0; i < impedance_devices.size(); i++){
         //     std::cout << impedance_devices[i]->show_nodeinfo() << std::endl;
@@ -1225,6 +1232,7 @@ int main(){
 
                 ss_sources.push_back(tmp_s);
             }
+            
         }
 
         for(int i = 0; i < ss_sources.size(); i++){
@@ -1247,8 +1255,9 @@ int main(){
         outfile << "frequencey,magnitude,phase" << std::endl;
 
         double current_phase, last_phase;
-
-        for(int n = 0; f < f_stop; n++){
+        
+        for (int n=0; f<f_stop;n++){
+            
             f = f_start * pow(10, n/n_ppd);
             omega = 2 * M_PI * f;
 
@@ -1323,7 +1332,6 @@ int main(){
         //std::cout << "Time taken by function: "<< (t1-t0) + (t3-t2) + (t5-t4) + (t7-t6) << " microseconds" << std::endl;
         std::cout << (t1-t0) + (t3-t2) + (t5-t4) + (t7-t6) << std::endl;
         outfile.close();
-        testfile.close();
     } 
 }
 

@@ -798,7 +798,7 @@ int main(){
     NonLinearDevice* tmp_nld;
     
     // frequency step parameters, we assume ac analysis always done in decades
-    double f_start, f_stop, n_ppd, f, omega = 0;
+    double f_start, f_stop, n_ppd, f=0, omega = 0;
     int n_max = 0;
  
     while(std::getline(infile, component)){
@@ -1213,7 +1213,6 @@ int main(){
     outfile << "frequencey,magnitude,phase" << std::endl;
 
     double current_phase, last_phase;
-
     for(int n = 0; f < f_stop; n++){
         f = f_start * pow(10, n/n_ppd);
         omega = 2 * M_PI * f;

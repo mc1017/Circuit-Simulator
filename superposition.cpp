@@ -967,6 +967,7 @@ int main(){
     timestamp_t t5 = get_timestamp();
     std::cin >> s_input;
     timestamp_t t6 = get_timestamp();
+
     for(int i=0; i<non_linear_devices.size(); i++){
         double Geq, Ieq, Vd = 0.7, Id, Is_diode = 1 * pow(10, -14), Is_bjt = 1 * pow(10,-16), Vt = 25.865 * pow(10, -3), V1 = 0, V2 = 0, Vdlast = 1, beta = 100, Kp = 2 * pow(10,-5);
         
@@ -1285,8 +1286,8 @@ int main(){
 
         last_phase = current_phase;
     }
+
     timestamp_t t7 = get_timestamp();
     std::cout << "Time taken by function: "<< (t1-t0) + (t3-t2) + (t5-t4) + (t7-t6) << " microseconds" << std::endl;
-
 }
 

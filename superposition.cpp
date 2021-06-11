@@ -933,7 +933,7 @@ int main(){
     std::cin >> n_output;
 
     if((n_output > n_max) || (n_output <= 0)){
-        std::cout << "error, nominated output node does not exist" << std::cout;
+        std::cout << "error, invalid output node" << std::cout;
 
         return EXIT_FAILURE;
     }

@@ -785,11 +785,11 @@ int main(){
     std::string component;
     std::vector<std::string> substrs;
     //can we delete impedance_devices and sources? not needed for analysis portion only needed to test parse
-    std::vector<ImpedanceDevice*> impedance_devices, ss_impedance_devices, dc_impedance_devices; 
+    std::vector<ImpedanceDevice*> ss_impedance_devices, dc_impedance_devices; 
     ImpedanceDevice* tmp_id;
     ImpedanceDevice* tmp_id2;
 
-    std::vector<Source*> sources, ss_sources, dc_sources; 
+    std::vector<Source*> ss_sources, dc_sources; 
     Source* tmp_s;
     Source* tmp_s2;
 
@@ -815,7 +815,6 @@ int main(){
         if(substrs[0][0] == 'R'){
             tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
             
-            impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
             dc_impedance_devices.push_back(tmp_id);//new
 
@@ -824,7 +823,6 @@ int main(){
         else if(substrs[0][0] == 'C'){
             tmp_id = new Capacitor(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]));
             
-            impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
 
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
@@ -834,7 +832,6 @@ int main(){
 
             tmp_id2 = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), 0.001);
 
-            impedance_devices.push_back(tmp_id);
             ss_impedance_devices.push_back(tmp_id);
             dc_impedance_devices.push_back(tmp_id2);
 
@@ -845,7 +842,6 @@ int main(){
             tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), 0.001);
           
             //ss equivalent of DC Voltage Source is short circuit, represented by resistor of 1m
-            sources.push_back(tmp_s);
             dc_sources.push_back(tmp_s);//new
             ss_impedance_devices.push_back(tmp_id);
 
@@ -855,7 +851,6 @@ int main(){
             tmp_s = new ACVSource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), extract_double(substrs[4]), substrs[0]);
             tmp_id = new Resistor(node_to_number(substrs[1]), node_to_number(substrs[2]), 0.001);
 
-            sources.push_back(tmp_s);
             ss_sources.push_back(tmp_s);
             dc_impedance_devices.push_back(tmp_id);//new
 
@@ -864,7 +859,6 @@ int main(){
         else if(substrs[0][0] == 'I' && substrs[3][0] != 'A'){
             tmp_s = new DCISource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), substrs[0]);
             
-            sources.push_back(tmp_s);
             dc_sources.push_back(tmp_s);//new
 
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
@@ -872,7 +866,6 @@ int main(){
         else if(substrs[0][0] == 'I' && substrs[3][0] == 'A'){
             tmp_s = new ACISource(node_to_number(substrs[1]), node_to_number(substrs[2]), prefix_convertor(substrs[3]), extract_double(substrs[4]), substrs[0]);
 
-            sources.push_back(tmp_s);
             ss_sources.push_back(tmp_s);
 
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
@@ -880,7 +873,6 @@ int main(){
         else if(substrs[0][0] == 'G'){
             tmp_s = new VCCSource(node_to_number(substrs[1]), node_to_number(substrs[2]), node_to_number(substrs[3]), node_to_number(substrs[4]), prefix_convertor(substrs[5]), substrs[0]);
 
-            sources.push_back(tmp_s);
             ss_sources.push_back(tmp_s);
 
             n_max = max_node_number(n_max, node_to_number(substrs[1]), node_to_number(substrs[2]), 0);
@@ -919,39 +911,6 @@ int main(){
     }
 
     infile.close();
-    
-    // for(int i = 0; i < impedance_devices.size(); i++){
-    //     std::cout << impedance_devices[i]->show_nodeinfo() << std::endl;
-    //     std::cout << impedance_devices[i]->give_nodeinfo().x << std::endl;
-    //     std::cout << impedance_devices[i]->give_nodeinfo().y << std::endl;
-    //     std::cout << "Impedance: " << impedance_devices[i]->get_impedance(1) << std::endl;
-    //     std::cout << "Conductance: " << impedance_devices[i]->get_conductance(1) << std::endl;
-    //     std::cout << std::endl;
-    // }
-
-    //for(int i = 0; i < sources.size(); i++){
-        //std::cout << sources[i]->show_nodeinfo() << std::endl;
-        //std::cout << "Source Magnitude: " << sources[i]->get_magnitude() << std::endl;
-        //std::cout << "Source Phase: " << sources[i]->get_phase() << std::endl;
-        //std::cout << "Source Type: " << sources[i]->get_type() << std::endl;
-        //if(sources[i]->get_type() == "VCCS"){
-            //std::cout << "Control +: " << sources[i]->give_controlinfo().x << std::endl;
-            //std::cout << "Control -: " << sources[i]->give_controlinfo().y << std::endl;
-            //std::cout << "Transconductance: " << sources[i]->get_gm() << std::endl;
-        //}
-        //std::cout << std::endl;
-    //}
-
-    //for(int i = 0; i < non_linear_devices.size(); i++){
-        //std::cout << non_linear_devices[i]->show_nodeinfo() << std::endl;
-        //std::cout << "Model: " << non_linear_devices[i]->get_model() << std::endl;
-        //std::cout << std::endl;
-    //}
-
-    //std::cout << "Number of points per decade: " << n_ppd << std::endl;
-    //std::cout << "Start frequency: " << f_start << " Hz" << std::endl;
-    //std::cout << "Stop frequency: " << f_stop << " Hz" << std::endl;
-    //std::cout << "Total number of nodes: " << n_max << std::endl;
 
     MatrixXcd matrixA(n_max,n_max), matrixG(n_max, n_max), matrixB(n_max, 1), matrixBref(n_max, 1), matrixX(n_max, 1);
 

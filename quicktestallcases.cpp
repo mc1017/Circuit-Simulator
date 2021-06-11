@@ -11,8 +11,6 @@
 
 using namespace Eigen;
 
-using namespace Eigen;
-
 typedef unsigned long long timestamp_t;
 
     static timestamp_t get_timestamp (){

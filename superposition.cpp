@@ -11,8 +11,6 @@
 
 using namespace Eigen;
 
-using namespace Eigen;
-
 typedef unsigned long long timestamp_t;
 
     static timestamp_t get_timestamp (){
@@ -627,6 +625,18 @@ int max_node_number(int node_max, const int& node1, const int& node2, const int&
 }
 
 
+bool detect_input_source(const std::vector<Source*>& sources, const std::string& inputsource_label){
+
+    for(int i = 0; i < sources.size(); i++){
+        if(sources[i]->get_source_label() == inputsource_label){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 //calculate the magnitude of the transfer function
 double return_tf_magnitude(const std::complex<double>& source, const std::complex<double>& output_node){
     double gain;
@@ -921,10 +931,24 @@ int main(){
     std::cout << "Which node is the output node?" << std::endl;
     timestamp_t t3 = get_timestamp();
     std::cin >> n_output;
+
+    if((n_output > n_max) || (n_output <= 0)){
+        std::cout << "error, nominated output node does not exist" << std::cout;
+
+        return EXIT_FAILURE;
+    }
+
     timestamp_t t4 = get_timestamp();
     std::cout << "Which source is the input source?" << std::endl;
     timestamp_t t5 = get_timestamp();
     std::cin >> s_input;
+
+    if(detect_input_source(ss_sources, s_input) == false){
+        std::cout << "error, nominated input source does not exist" << std::cout;
+
+        return EXIT_FAILURE;
+    }
+
     timestamp_t t6 = get_timestamp();
 
     for(int i=0; i<non_linear_devices.size(); i++){

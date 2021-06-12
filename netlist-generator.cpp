@@ -9,7 +9,7 @@ int main(){
     
     for (int s=0; s<65; s++){
 
-        std::string name="netlist_timetest"+ std::to_string(s+1)+".txt";
+        std::string name="timetest"+ std::to_string(s+1)+".txt";
 
         testfile.open(name);
         testfile<<"V1" << " " << "N001"<< " " << "0" << " " << "AC(5 0)"<<std::endl;
@@ -38,7 +38,7 @@ int main(){
              
         }
         testfile<<".ac "<<"dec "<<"10 "<<"0.01 "<<"10k"<<std::endl;
-        testfile<<".end"<<std::endl;       
-    }
-    testfile.close();
+        testfile<<".end"<<std::endl;  
+        testfile.close();     
+    } 
 }

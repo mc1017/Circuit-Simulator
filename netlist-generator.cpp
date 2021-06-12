@@ -7,7 +7,7 @@ int main(){
     
     double value = 10000;
     
-    for (int s=0; s<65; s++){
+    for (int s=0; s<60; s++){
 
         std::string name="timetest"+ std::to_string(s+1)+".txt";
 

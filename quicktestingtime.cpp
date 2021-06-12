@@ -770,7 +770,7 @@ int main(){
     double value = 10000;
     
     for (int s=0; s<30; s++){
-        std::string testname="timetest"+ std::to_string(s+1)+".txt";
+        std::string testname="netlist_timetest"+ std::to_string(s+1)+".txt";
 
         testfile.open(testname);
         testfile<<"V1" << " " << "N001"<< " " << "0" << " " << "AC(5 0)"<<std::endl;

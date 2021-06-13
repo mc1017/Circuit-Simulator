@@ -11,12 +11,12 @@
 
 using namespace Eigen;
 
-typedef unsigned long long timestamp_t;
+typedef unsigned long long timemarker;
 
-    static timestamp_t get_timestamp (){
+    static timemarker get_timestamp (){
       struct timeval now;
       gettimeofday (&now, NULL);
-      return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
+      return  now.tv_usec + (timemarker)now.tv_sec * 1000000;
     }
 
 //define parsing structure for two terminal components
@@ -777,14 +777,14 @@ void reset_matrices(MatrixXcd& A, MatrixXcd& B, MatrixXcd& Bref, MatrixXcd& G, M
 
 
 int main(){
-    timestamp_t t0 = get_timestamp();
+    timemarker t0 = get_timestamp();
     std::ifstream infile; 
     std::string input_file_name;
 
     std::cout << "What is the name of the netlist input file?" << std::endl;
-    timestamp_t t1 = get_timestamp();
+    timemarker t1 = get_timestamp();
     std::cin >> input_file_name;
-    timestamp_t t2 = get_timestamp();
+    timemarker t2 = get_timestamp();
     infile.open(input_file_name);
  
     if(!infile.is_open()){
@@ -929,27 +929,27 @@ int main(){
     int n_output;
     std::string s_input;
     std::cout << "Which node is the output node?" << std::endl;
-    timestamp_t t3 = get_timestamp();
+    timemarker t3 = get_timestamp();
     std::cin >> n_output;
 
     if((n_output > n_max) || (n_output <= 0)){
-        std::cout << "error, invalid output node" << std::cout;
+        std::cout << "error, invalid output node" << std::endl;
 
         return EXIT_FAILURE;
     }
 
-    timestamp_t t4 = get_timestamp();
+    timemarker t4 = get_timestamp();
     std::cout << "Which source is the input source?" << std::endl;
-    timestamp_t t5 = get_timestamp();
+    timemarker t5 = get_timestamp();
     std::cin >> s_input;
 
     if(detect_input_source(ss_sources, s_input) == false){
-        std::cout << "error, nominated input source does not exist" << std::cout;
+        std::cout << "error, nominated input source does not exist" << std::endl;
 
         return EXIT_FAILURE;
     }
 
-    timestamp_t t6 = get_timestamp();
+    timemarker t6 = get_timestamp();
 
     for(int i=0; i<non_linear_devices.size(); i++){
         double Geq, Ieq, Vd = 0.7, Id, Is_diode = 1 * pow(10, -14), Is_bjt = 1 * pow(10,-16), Vt = 25.865 * pow(10, -3), V1 = 0, V2 = 0, Vdlast = 1, beta = 100, Kp = 2 * pow(10,-5);
@@ -1269,7 +1269,7 @@ int main(){
         last_phase = current_phase;
     }
 
-    timestamp_t t7 = get_timestamp();
+    timemarker t7 = get_timestamp();
     std::cout << "Time taken by function: "<< (t1-t0) + (t3-t2) + (t5-t4) + (t7-t6) << " microseconds" << std::endl;
 }
 

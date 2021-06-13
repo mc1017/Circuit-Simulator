@@ -1194,7 +1194,7 @@ int main(){
         return EXIT_FAILURE;
     }
 
-    outfile << "frequencey,magnitude,phase" << std::endl;
+    outfile << "frequency,magnitude,phase" << std::endl;
 
     double current_phase, last_phase;
     for(int n = 0; f < f_stop; n++){

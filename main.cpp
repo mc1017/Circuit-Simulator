@@ -13,11 +13,11 @@ using namespace Eigen;
 
 typedef unsigned long long timemarker;
 
-    static timemarker get_timestamp (){
-      struct timeval now;
-      gettimeofday (&now, NULL);
-      return  now.tv_usec + (timemarker)now.tv_sec * 1000000;
-    }
+static timemarker get_timestamp (){
+    struct timeval now;
+    gettimeofday (&now, NULL);
+    return  now.tv_usec + (timemarker)now.tv_sec * 1000000;
+}
 
 //define parsing structure for two terminal components
 struct NodePoint{
@@ -1270,6 +1270,6 @@ int main(){
     }
 
     timemarker t7 = get_timestamp();
-    std::cout << "Time taken by function: "<< (t1-t0) + (t3-t2) + (t5-t4) + (t7-t6) << " microseconds" << std::endl;
+    std::cout << "Execution time: "<< (t1-t0) + (t3-t2) + (t5-t4) + (t7-t6) << " microseconds" << std::endl;
 }
 

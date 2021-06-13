@@ -1326,7 +1326,7 @@ int main(){
         }
         timestamp_t t1 = get_timestamp();
         //std::cout << "Time taken by function: "<< (t1-t0) + (t3-t2) + (t5-t4) + (t7-t6) << " microseconds" << std::endl;
-        std::cout << t1-t0 << std::endl;
+        std::cout << "Execution time of netlist"<<s+1<<": "<< t1-t0<< " microseconds"<< std::endl;
         outfile.close();
     } 
 }

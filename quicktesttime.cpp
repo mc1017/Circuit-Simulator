@@ -11,13 +11,14 @@
 
 using namespace Eigen;
 
-typedef unsigned long long timestamp_t;
 
-    static timestamp_t get_timestamp (){
-      struct timeval now;
-      gettimeofday (&now, NULL);
-      return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
-    }
+typedef unsigned long long timemarker;
+
+static timemarker get_timestamp (){
+    struct timeval now;
+    gettimeofday (&now, NULL);
+    return  now.tv_usec + (timemarker)now.tv_sec * 1000000;
+}
 
 //define parsing structure for two terminal components
 struct NodePoint{
@@ -802,7 +803,7 @@ int main(){
         testfile<<".end"<<std::endl;
         testfile.close();
 
-        timestamp_t t0 = get_timestamp();
+        timemarker t0 = get_timestamp();
         std::ifstream infile; 
         std::string input_file_name;
 
@@ -1324,7 +1325,7 @@ int main(){
 
             last_phase = current_phase;
         }
-        timestamp_t t1 = get_timestamp();
+        timemarker t1 = get_timestamp();
         //std::cout << "Time taken by function: "<< (t1-t0) + (t3-t2) + (t5-t4) + (t7-t6) << " microseconds" << std::endl;
         std::cout << "Execution time of netlist"<<s+1<<": "<< t1-t0<< " microseconds"<< std::endl;
         outfile.close();

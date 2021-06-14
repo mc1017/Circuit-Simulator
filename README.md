@@ -63,6 +63,7 @@ taken to solve the system for nodal voltages.
 
 
 Files Details:
+
 Main.cpp - This contains the circuit simulator software. To test it, first write a .txt file containing a reduced netlist format.
 Then, run the program, input the file name (i.e. netlist_bjt.txt), node number (i.e. 3), and source (i.e. V1).
 The execution time will be printed. A file named output.txt will be created which contains the stepped frequency, 

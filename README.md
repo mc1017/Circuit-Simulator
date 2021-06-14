@@ -70,7 +70,8 @@ Then, run the program, input the file name (i.e. netlist_bjt.txt), node number (
 The execution time will be printed. A file named output.txt will be created which contains the stepped frequency, 
 Magnitude, and phase in CSV Format. The file can be plotted using matlab with the file plotsim.m
 
-quicktestallcases.cpp - automated time test programme that first creates a specified number of netlist with increasing node number. 
+netlist-generator.cpp - automated netlist files generator. The number of files (s) and node increment (q) between netlists can be specified. 
+quicktesttime.cpp - automated time test programme that first creates a specified number of netlist with increasing node number. 
 After the creation of a file, it will read it and simulate the netlist that it contains and output the execution time. The purpose
 of this is to find out the relationship between execution time against the number of nodes contained in a circuit. 
 
